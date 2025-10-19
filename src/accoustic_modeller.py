@@ -1,7 +1,5 @@
-
 import numpy as np
 import glob
-import matplotlib.pyplot as plt
 import tensorflow as tf 
 
 from keras.optimizers import Adam
