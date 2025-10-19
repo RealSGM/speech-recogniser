@@ -81,9 +81,30 @@ def mel_triangular_filterbank(magspec: np.ndarray, num_channels: int, fs: int) -
     return fbank
 
 
-def compute_mfcc(speechFrame: np.ndarray, fs: int, num_mel_filters: int, num_ceps: int) -> np.ndarray:
+def mfcc(speechFrame: np.ndarray, fs: int, num_mel_filters: int, num_ceps: int) -> np.ndarray:
     magnitude, _ = mag_and_phase(speechFrame)
     mel_fbank = mel_triangular_filterbank(magnitude, num_mel_filters, fs)
     log_mel_fbank = np.log(mel_fbank + 1e-10) # - Add 1e-10 to avoid log(0)
     mfcc = dct(log_mel_fbank, type=2, norm='ortho')[:num_ceps]
     return mfcc
+
+
+def get_mfcc_signal(speechSignal: np.ndarray, fs: int, frame_size: int, frame_stride: int, num_mel_filters: int, num_ceps: int) -> np.ndarray:
+    signal_length = len(speechSignal)
+    frame_length = int(frame_size * fs)
+    frame_step = int(frame_stride * fs)
+    num_frames = int(np.ceil(float(np.abs(signal_length - frame_length)) / frame_step)) + 1
+
+    pad_signal_length = num_frames * frame_step + frame_length
+    z = np.zeros((pad_signal_length - signal_length))
+    pad_signal = np.append(speechSignal, z)
+
+    mfcc_features = []
+    for i in range(num_frames):
+        start_index = i * frame_step
+        end_index = start_index + frame_length
+        frame = pad_signal[start_index:end_index]
+        mfcc_feat = mfcc(frame, fs, num_mel_filters, num_ceps)
+        mfcc_features.append(mfcc_feat)
+
+    return np.array(mfcc_features)
