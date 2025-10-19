@@ -33,5 +33,6 @@ def load_dataset():
             
     return audio_data, labels
 
+
 if __name__ == "__main__":
     load_dataset()
