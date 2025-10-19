@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
+from scipy.fftpack import dct
 
 
 def mag_and_phase(speechFrame: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -39,8 +39,6 @@ def linear_rectangular_filterbank(magspec: np.ndarray, num_channels: int):
     return fbank
 
 
-# Experiment by first changing the spacing of the filterbank vectors so that they follow a mel-
-# scale. Then change the shape of the filterbank channels from rectangular to triangular. 
 def linear_triangular_filterbank(magspec: np.ndarray, num_channels: int):
     num_freqs = len(magspec)
     fbank = np.zeros((num_channels))
@@ -81,3 +79,11 @@ def mel_triangular_filterbank(magspec: np.ndarray, num_channels: int, fs: int) -
             fbank[i - 1] += (end - j) / (end - center) * magspec[j]
         
     return fbank
+
+
+def compute_mfcc(speechFrame: np.ndarray, fs: int, num_mel_filters: int, num_ceps: int) -> np.ndarray:
+    magnitude, _ = mag_and_phase(speechFrame)
+    mel_fbank = mel_triangular_filterbank(magnitude, num_mel_filters, fs)
+    log_mel_fbank = np.log(mel_fbank + 1e-10) # - Add 1e-10 to avoid log(0)
+    mfcc = dct(log_mel_fbank, type=2, norm='ortho')[:num_ceps]
+    return mfcc

@@ -56,35 +56,8 @@ labels=to_categorical(LE.transform(labels))
 X_train, X_tmp, y_train, y_tmp = train_test_split(data, labels, test_size=0.2, random_state=0) 
 X_val, X_test, y_val, y_test = train_test_split(X_tmp, y_tmp, test_size=0.5, random_state=0) 
 
-
-epoch_sizes = [20, 25, 30]
-batch_sizes = [16, 32, 64]
-
-# Loop through difference epoch sizes and batch sizes
-# for num_epochs in epoch_sizes:
-#     for num_batch_size in batch_sizes:
-#         model = create_model() 
-#         model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer='adam' )
-#         history = model.fit(X_train, y_train, validation_data=(X_val, y_val), batch_size=num_batch_size, epochs=num_epochs, verbose="auto") 
-
-#         plt.plot(history.history['accuracy']) 
-#         plt.plot(history.history['val_accuracy']) 
-#         plt.title('Model Accuracy') 
-#         plt.ylabel('Accuracy') 
-#         plt.xlabel('Epoch') 
-#         plt.legend(['Train', 'Validation'], loc='upper left') 
-#         plt.show() 
-        
-#         plt.plot(history.history['loss']) 
-#         plt.plot(history.history['val_loss']) 
-#         plt.title('Model Loss') 
-#         plt.ylabel('Loss') 
-#         plt.xlabel('Epoch') 
-#         plt.legend(['Train', 'Validation'], loc='upper left') 
-#         plt.show()
-
-num_epochs = epoch_sizes[1]
-num_batch_size = batch_sizes[1]
+num_epochs = 25
+num_batch_size = 32
 
 model = create_model() 
 model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer='adam' )

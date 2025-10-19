@@ -11,11 +11,10 @@ def read_audiofile(file_path: str) -> tuple[np.ndarray, int]:
 
 
 def load_dataset():
+    print("- Loading dataset...")
     audio_data, labels = [], []
     
     for label in os.listdir(recording_directory):
-        print("-" * 20)
-        print(f"Processing label: {label}")
         folder = os.path.join(recording_directory, label)
         
         if not os.path.isdir(folder):
@@ -30,9 +29,6 @@ def load_dataset():
             
             audio_data.append(data)
             labels.append(label)
-            
+    
+    print("- Dataset loaded")
     return audio_data, labels
-
-
-if __name__ == "__main__":
-    load_dataset()
