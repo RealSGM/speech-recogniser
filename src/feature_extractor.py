@@ -1,6 +1,9 @@
 import numpy as np
 from scipy.fftpack import dct
+import os
+import file_reader
 
+save_path = "data/mfccs"
 
 def mag_and_phase(speechFrame: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     # Apply a Hamming window
@@ -108,3 +111,45 @@ def get_mfcc_signal(speechSignal: np.ndarray, fs: int, frame_size: float, frame_
         mfcc_features.append(mfcc_feat)
 
     return np.array(mfcc_features)
+
+
+def create_mfcc_dataset() -> None:
+    audio_data, labels = file_reader.load_dataset()
+    print("Number of audio files loaded:", len(audio_data))
+    
+    for i in range(len(audio_data)):
+        mfcc = get_mfcc_signal(audio_data[i], fs=16000, frame_size=0.025, frame_stride=0.01, num_mel_filters=40, num_ceps=13)
+        label = labels[i]
+        print(f"MFCC shape for sample {i}: {mfcc.shape} of label '{label}'")
+        
+        # Check if save directory + label subdirectory exists, create if not
+        label_dir = os.path.join(save_path, label)
+        if not os.path.exists(label_dir):
+            os.makedirs(label_dir)
+        
+        # Save MFCC features
+        np.save(f"{label_dir}/mfcc_{i:03d}.npy", mfcc)
+
+
+def get_mfcc_dictionary() -> dict:
+    if os.listdir(save_path) == []:
+        create_mfcc_dataset()
+
+    mfcc_dict = {}
+
+    for label in os.listdir(save_path):
+        label_dir = os.path.join(save_path, label)
+        if not os.path.isdir(label_dir):
+            continue
+        
+        mfcc_files = [f for f in os.listdir(label_dir) if f.endswith('.npy')]
+        mfcc_list = []
+        for mfcc_file in mfcc_files:
+            mfcc_path = os.path.join(label_dir, mfcc_file)
+            mfcc_data = np.load(mfcc_path)
+            mfcc_list.append(mfcc_data)
+        
+        mfcc_dict[label] = mfcc_list
+        print(f"Loaded {len(mfcc_list)} MFCC files for label '{label}'")
+    
+    return mfcc_dict
