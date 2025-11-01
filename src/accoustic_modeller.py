@@ -1,82 +1,88 @@
 import numpy as np
 import glob
-import tensorflow as tf 
-
-from keras.optimizers import Adam
 from pathlib import Path
-from keras.utils import to_categorical 
-from sklearn.preprocessing import LabelEncoder 
+from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
-from keras.models import Sequential 
-from keras.layers import Dense, Activation, Flatten, Conv2D, InputLayer, MaxPooling2D 
+from keras.utils import to_categorical
+from keras.models import Sequential
+from keras.layers import Dense, Activation, Flatten, Conv2D, InputLayer, MaxPooling2D
+import tensorflow as tf
 
 
-def create_model(): 
-    numClasses=10 
-    model=Sequential() 
-    model.add(InputLayer(input_shape=(40, 21, 1))) 
-    model.add(Conv2D(64, (3, 3), activation='relu')) 
-    model.add(Conv2D(64, (3, 3), activation='relu')) 
-    model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(3, 3))) 
-    model.add(Flatten()) 
-    model.add(Dense(256)) 
-    model.add(Activation('relu')) 
-    model.add(Dense(numClasses)) 
-    model.add(Activation('softmax')) 
+def load_mfcc_data(mfcc_dir: str):
+    mfcc_files = sorted(glob.glob(f'{mfcc_dir}/*.npy'))
+    mfcc_data_list = [np.load(file) for file in mfcc_files]
+
+    # Find maximum frame length
+    max_frames = max(data.shape[1] for data in mfcc_data_list)
+
+    # Pad all to equal length
+    data = np.array([
+        np.pad(d, ((0, 0), (0, max_frames - d.shape[1]))) for d in mfcc_data_list
+    ])
+
+    # Extract labels (e.g. from filenames like 'dave_001.npy')
+    labels = np.array([Path(f).stem.split('_')[0] for f in mfcc_files])
+
+    # Normalise
+    data = data / np.max(data)
+
+    print(f"Loaded {len(data)} samples from {mfcc_dir}")
+    print(f"Data shape: {data.shape}, Labels shape: {labels.shape}")
+
+    return data, labels
+
+
+def encode_labels(labels, class_list):
+    encoder = LabelEncoder()
+    encoder.fit(class_list)
+    encoded = to_categorical(encoder.transform(labels))
+    return encoded, encoder
+
+
+def create_model(input_shape=(40, 21, 1), num_classes=10):
+    model = Sequential()
+    model.add(InputLayer(input_shape=input_shape))
+    model.add(Conv2D(64, (3, 3), activation='relu'))
+    model.add(Conv2D(64, (3, 3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(3, 3)))
+    model.add(Flatten())
+    model.add(Dense(256, activation='relu'))
+    model.add(Dense(num_classes, activation='softmax'))
+
+    model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer='adam')
     return model
 
 
-# Load and pad MFCC data
-mfcc_files = sorted(glob.glob('week4/mfccs/*.npy'))
-mfcc_data_list = [np.load(file) for file in mfcc_files]
-max_frames = max(data.shape[1] for data in mfcc_data_list)
-
-data = np.array([np.pad(data, ((0, 0), (0, max_frames - data.shape[1]))) for data in mfcc_data_list])
-
-# Extract labels from filenames
-labels = np.array([Path(file).stem.split('_')[0] for file in mfcc_files])
-
-# Normalise data
-data = data / np.max(data)
-
-print("Data shape:", data.shape)
-print("Labels shape:", labels.shape)
-print("Max frames:", max_frames)
-
-LE=LabelEncoder() 
-classes = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] 
-LE = LE.fit(classes) 
-labels=to_categorical(LE.transform(labels)) 
+def train_model(model, X_train, y_train, X_val, y_val, epochs=25, batch_size=32):
+    history = model.fit(
+        X_train, y_train,
+        validation_data=(X_val, y_val),
+        batch_size=batch_size,
+        epochs=epochs,
+        verbose="auto"
+    )
+    return history
 
 
-X_train, X_tmp, y_train, y_tmp = train_test_split(data, labels, test_size=0.2, random_state=0) 
-X_val, X_test, y_val, y_test = train_test_split(X_tmp, y_tmp, test_size=0.5, random_state=0) 
+def evaluate_model(model, X_test, y_test, encoder):
+    predicted_probs = model.predict(X_test, verbose=0)
+    predicted = np.argmax(predicted_probs, axis=1)
+    actual = np.argmax(y_test, axis=1)
 
-num_epochs = 25
-num_batch_size = 32
+    accuracy = metrics.accuracy_score(actual, predicted)
+    print(f"\nTest Accuracy: {accuracy * 100:.2f}%\n")
 
-model = create_model() 
-model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer='adam' )
-history = model.fit(X_train, y_train, validation_data=(X_val, y_val), batch_size=num_batch_size, epochs=num_epochs, verbose="auto") 
+    cm = metrics.confusion_matrix(actual, predicted)
+    metrics.ConfusionMatrixDisplay(confusion_matrix=cm).plot()
 
-predicted_probs=model.predict(X_test,verbose=0) 
-predicted=np.argmax(predicted_probs,axis=1) 
-actual=np.argmax(y_test,axis=1) 
-accuracy = metrics.accuracy_score(actual, predicted) 
-print(f'Accuracy: {accuracy * 100}%')
+    print(metrics.classification_report(actual, predicted, target_names=encoder.classes_))
 
-predicted_prob = model.predict(np.expand_dims(X_test[0,:,:], axis = 0), verbose='auto') 
-predicted_id = np.argmax(predicted_prob,axis=1) 
-predicted_class = LE.inverse_transform(predicted_id) 
 
-print(f'Predicted class for first test sample: {predicted_class[0]}')
-
-confusion_matrix = metrics.confusion_matrix( 
-np.argmax(y_test,axis=1), predicted) 
-cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = 
-confusion_matrix) 
-cm_display.plot()
-
-print(metrics.classification_report(np.argmax(y_test,axis=1), predicted, target_names=classes))
+def predict_sample(model, X_sample, encoder):
+    predicted_prob = model.predict(np.expand_dims(X_sample, axis=0), verbose=0)
+    predicted_id = np.argmax(predicted_prob, axis=1)
+    predicted_class = encoder.inverse_transform(predicted_id)
+    print(f'Predicted class: {predicted_class[0]}')
+    return predicted_class[0]

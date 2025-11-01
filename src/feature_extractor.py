@@ -89,7 +89,7 @@ def mfcc(speechFrame: np.ndarray, fs: int, num_mel_filters: int, num_ceps: int) 
     return mfcc
 
 
-def get_mfcc_signal(speechSignal: np.ndarray, fs: int, frame_size: int, frame_stride: int, num_mel_filters: int, num_ceps: int) -> np.ndarray:
+def get_mfcc_signal(speechSignal: np.ndarray, fs: int, frame_size: float, frame_stride: float, num_mel_filters: int, num_ceps: int) -> np.ndarray:
     signal_length = len(speechSignal)
     frame_length = int(frame_size * fs)
     frame_step = int(frame_stride * fs)
