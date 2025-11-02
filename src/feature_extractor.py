@@ -131,25 +131,41 @@ def create_mfcc_dataset() -> None:
         np.save(f"{label_dir}/mfcc_{i:03d}.npy", mfcc)
 
 
-def get_mfcc_dictionary() -> dict:
+import numpy as np
+import os
+
+def get_mfcc_dataset() -> tuple[np.ndarray, np.ndarray]:
     if os.listdir(save_path) == []:
         create_mfcc_dataset()
 
-    mfcc_dict = {}
+    data = []
+    labels = []
 
     for label in os.listdir(save_path):
         label_dir = os.path.join(save_path, label)
         if not os.path.isdir(label_dir):
             continue
-        
-        mfcc_files = [f for f in os.listdir(label_dir) if f.endswith('.npy')]
-        mfcc_list = []
-        for mfcc_file in mfcc_files:
-            mfcc_path = os.path.join(label_dir, mfcc_file)
-            mfcc_data = np.load(mfcc_path)
-            mfcc_list.append(mfcc_data)
-        
-        mfcc_dict[label] = mfcc_list
-        print(f"Loaded {len(mfcc_list)} MFCC files for label '{label}'")
-    
-    return mfcc_dict
+
+        for mfcc_file in os.listdir(label_dir):
+            if not mfcc_file.endswith('.npy'):
+                continue
+
+            mfcc_data = np.load(os.path.join(label_dir, mfcc_file))
+            data.append(mfcc_data)
+            labels.append(label)
+
+    # Normalise MFCCs
+    data = [mfcc / np.max(np.abs(mfcc)) for mfcc in data]
+
+    # Pad them
+    max_len = max(m.shape[0] for m in data)
+    num_features = data[0].shape[1]
+
+    padded = np.zeros((len(data), max_len, num_features))
+    for i, m in enumerate(data):
+        length = m.shape[0]
+        padded[i, :length, :] = m
+
+    padded = np.expand_dims(padded, -1)
+
+    return padded, np.array(labels)

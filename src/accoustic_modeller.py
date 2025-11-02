@@ -10,30 +10,6 @@ from keras.layers import Dense, Activation, Flatten, Conv2D, InputLayer, MaxPool
 import tensorflow as tf
 
 
-def load_mfcc_data(mfcc_dir: str):
-    mfcc_files = sorted(glob.glob(f'{mfcc_dir}/*.npy'))
-    mfcc_data_list = [np.load(file) for file in mfcc_files]
-
-    # Find maximum frame length
-    max_frames = max(data.shape[1] for data in mfcc_data_list)
-
-    # Pad all to equal length
-    data = np.array([
-        np.pad(d, ((0, 0), (0, max_frames - d.shape[1]))) for d in mfcc_data_list
-    ])
-
-    # Extract labels (e.g. from filenames like 'dave_001.npy')
-    labels = np.array([Path(f).stem.split('_')[0] for f in mfcc_files])
-
-    # Normalise
-    data = data / np.max(data)
-
-    print(f"Loaded {len(data)} samples from {mfcc_dir}")
-    print(f"Data shape: {data.shape}, Labels shape: {labels.shape}")
-
-    return data, labels
-
-
 def encode_labels(labels, class_list):
     encoder = LabelEncoder()
     encoder.fit(class_list)
