@@ -19,6 +19,9 @@ def compute_deltas(mfcc_features: np.ndarray, N: int = 2) -> np.ndarray:
         deltas[t] = numerator / denominator
     return deltas
 
+def pre_emphasise(signal: np.ndarray, coeff: float = 0.97) -> np.ndarray:
+    return np.append(signal[0], signal[1:] - coeff * signal[:-1])
+
 
 def preprocess_signal(signal: np.ndarray, coeff: float = 0.97) -> np.ndarray:
     # Pre-emphasise
@@ -65,42 +68,6 @@ def mel_to_hz(mel: float) -> float:
     return 700 * (np.exp(mel / 1125) - 1)
 
 
-def pre_emphasise(signal: np.ndarray, coeff: float = 0.97) -> np.ndarray:
-    return np.append(signal[0], signal[1:] - coeff * signal[:-1])
-
-
-def linear_rectangular_filterbank(magspec: np.ndarray, num_channels: int):
-    num_freqs = len(magspec)
-    fbank = np.zeros((num_channels))
-    
-    for i in range(num_channels):
-        r = np.zeros(num_freqs)
-        start = int(i * num_freqs / num_channels)
-        end = int((i + 1) * num_freqs / num_channels)
-        r[start:end] = 1
-        fbank[i] = np.matmul(r, magspec)
-        
-    return fbank
-
-
-def linear_triangular_filterbank(magspec: np.ndarray, num_channels: int):
-    num_freqs = len(magspec)
-    fbank = np.zeros((num_channels))
-    
-    for i in range(num_channels):
-        r = np.zeros(num_freqs)
-        start = int(i * num_freqs / num_channels)
-        end = int((i + 1) * num_freqs / num_channels)
-        r[start:end] = 1
-        if i > 0:
-            r[start:end] *= np.linspace(0, 1, end - start)
-        if i < num_channels - 1:
-            r[start:end] *= np.linspace(1, 0, end - start)
-        fbank[i] = np.matmul(r, magspec)
-        
-    return fbank
-
-
 def mel_triangular_filterbank(magspec: np.ndarray, num_channels: int, fs: int) -> np.ndarray:
     num_freqs = len(magspec)
     fbank = np.zeros((num_channels))
@@ -127,10 +94,13 @@ def mel_triangular_filterbank(magspec: np.ndarray, num_channels: int, fs: int) -
 
 def mfcc(speechFrame: np.ndarray, fs: int, num_mel_filters: int, num_ceps: int) -> np.ndarray:
     magnitude, _ = mag_and_phase(speechFrame)
+    
+    frame_energy = np.log(np.sum(magnitude ** 2) + 1e-10) # Add 1e-10 to avoid log(0)
+    
     mel_fbank = mel_triangular_filterbank(magnitude, num_mel_filters, fs)
     log_mel_fbank = np.log(mel_fbank + 1e-10) # - Add 1e-10 to avoid log(0)
     mfcc = dct(log_mel_fbank, type=2, norm='ortho')[:num_ceps]
-    return mfcc
+    return np.append(mfcc, frame_energy)
 
 
 def get_mfcc_signal(speechSignal: np.ndarray, fs: int, frame_size: float, frame_stride: float, num_mel_filters: int, num_ceps: int) -> np.ndarray:
@@ -176,7 +146,10 @@ def create_mfcc_dataset() -> None:
         delta_delta = compute_deltas(delta)
         final = np.concatenate((mfcc, delta, delta_delta), axis=1)
         
+        print(f"MFCC+Energy shape: {mfcc.shape}")
+        print(f"Final combined feature shape: {final.shape}")
         print(f"MFCC shape for sample {i}: {final.shape} of label '{label}'")
+        
         save_mfcc(label, final, i)
 
 
