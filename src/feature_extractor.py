@@ -27,7 +27,6 @@ def spectral_features(magnitude: np.ndarray, fs: int) -> np.ndarray:
     return np.array([centroid, spread, flatness, rolloff, skewness, kurtosis, slope])
 
 
-
 ## Ensure all MFCC feature arrays have the same length by padding with zeros
 def pad_mfcc_features(data: list[np.ndarray], max_len: int, num_features: int) -> np.ndarray:
     padded = np.zeros((len(data), max_len, num_features))
@@ -75,6 +74,38 @@ def mag_and_phase(speechFrame: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     phase = np.angle(spectrum)
 
     return magnitude, phase
+
+
+def linear_rectangular_filterbank(magspec: np.ndarray, num_channels: int):
+    num_freqs = len(magspec)
+    fbank = np.zeros((num_channels))
+    
+    for i in range(num_channels):
+        r = np.zeros(num_freqs)
+        start = int(i * num_freqs / num_channels)
+        end = int((i + 1) * num_freqs / num_channels)
+        r[start:end] = 1
+        fbank[i] = np.matmul(r, magspec)
+        
+    return fbank
+
+
+def linear_triangular_filterbank(magspec: np.ndarray, num_channels: int):
+    num_freqs = len(magspec)
+    fbank = np.zeros((num_channels))
+    
+    for i in range(num_channels):
+        r = np.zeros(num_freqs)
+        start = int(i * num_freqs / num_channels)
+        end = int((i + 1) * num_freqs / num_channels)
+        r[start:end] = 1
+        if i > 0:
+            r[start:end] *= np.linspace(0, 1, end - start)
+        if i < num_channels - 1:
+            r[start:end] *= np.linspace(1, 0, end - start)
+        fbank[i] = np.matmul(r, magspec)
+        
+    return fbank
 
 
 def hz_to_mel(hz: float) -> float:
