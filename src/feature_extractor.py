@@ -5,6 +5,43 @@ import file_reader
 
 save_path = "data/mfccs"
 
+
+def compute_deltas(mfcc_features: np.ndarray, N: int = 2) -> np.ndarray:
+    deltas = np.zeros_like(mfcc_features)
+    for t in range(len(mfcc_features)):
+        numerator = 0
+        denominator = 0
+        for n in range(1, N + 1):
+            prev = max(0, t - n)
+            next = min(len(mfcc_features) - 1, t + n)
+            numerator += n * (mfcc_features[next] - mfcc_features[prev])
+            denominator += 2 * (n ** 2)
+        deltas[t] = numerator / denominator
+    return deltas
+
+
+def preprocess_signal(signal: np.ndarray, coeff: float = 0.97) -> np.ndarray:
+    # Pre-emphasise
+    emphasized_signal = np.append(signal[0], signal[1:] - coeff * signal[:-1])
+    # Mean normalisation
+    normalized_signal = emphasized_signal - np.mean(emphasized_signal)
+    return normalized_signal
+
+
+def standardise_signal_lengths(signals: np.ndarray) -> np.ndarray:
+    target_length = max(signal.shape[0] for signal in signals)
+    standardized = []
+    for signal in signals:
+        if signal.shape[0] < target_length:
+            pad_width = target_length - signal.shape[0]
+            padded_signal = np.pad(signal, ((0, pad_width), (0, 0)), mode='constant')
+            standardized.append(padded_signal)
+        else:
+            truncated_signal = signal[:target_length, :]
+            standardized.append(truncated_signal)
+    return np.array(standardized)
+
+
 def mag_and_phase(speechFrame: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     # Apply a Hamming window
     window = np.hamming(len(speechFrame))
@@ -26,6 +63,10 @@ def hz_to_mel(hz: float) -> float:
 
 def mel_to_hz(mel: float) -> float:
     return 700 * (np.exp(mel / 1125) - 1)
+
+
+def pre_emphasise(signal: np.ndarray, coeff: float = 0.97) -> np.ndarray:
+    return np.append(signal[0], signal[1:] - coeff * signal[:-1])
 
 
 def linear_rectangular_filterbank(magspec: np.ndarray, num_channels: int):
@@ -113,26 +154,31 @@ def get_mfcc_signal(speechSignal: np.ndarray, fs: int, frame_size: float, frame_
     return np.array(mfcc_features)
 
 
+def save_mfcc(label: str, mfcc_features: np.ndarray, index: int) -> None:
+    label_dir = os.path.join(save_path, label)
+    if not os.path.exists(label_dir):
+        os.makedirs(label_dir)
+    
+    np.save(f"{label_dir}/mfcc_{index:03d}.npy", mfcc_features)
+
+
 def create_mfcc_dataset() -> None:
     audio_data, labels = file_reader.load_dataset()
     print("Number of audio files loaded:", len(audio_data))
     
     for i in range(len(audio_data)):
-        mfcc = get_mfcc_signal(audio_data[i], fs=16000, frame_size=0.025, frame_stride=0.01, num_mel_filters=40, num_ceps=13)
         label = labels[i]
-        print(f"MFCC shape for sample {i}: {mfcc.shape} of label '{label}'")
         
-        # Check if save directory + label subdirectory exists, create if not
-        label_dir = os.path.join(save_path, label)
-        if not os.path.exists(label_dir):
-            os.makedirs(label_dir)
+        signal = preprocess_signal(audio_data[i])
+        mfcc = get_mfcc_signal(signal, fs=16000, frame_size=0.025, frame_stride=0.01, num_mel_filters=40, num_ceps=13)
+        mfcc = (mfcc - np.mean(mfcc)) / np.std(mfcc)  # Normalise MFCC
+        delta = compute_deltas(mfcc)
+        delta_delta = compute_deltas(delta)
+        final = np.concatenate((mfcc, delta, delta_delta), axis=1)
         
-        # Save MFCC features
-        np.save(f"{label_dir}/mfcc_{i:03d}.npy", mfcc)
+        print(f"MFCC shape for sample {i}: {final.shape} of label '{label}'")
+        save_mfcc(label, final, i)
 
-
-import numpy as np
-import os
 
 def get_mfcc_dataset() -> tuple[np.ndarray, np.ndarray]:
     if os.listdir(save_path) == []:
