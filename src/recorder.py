@@ -6,8 +6,8 @@ from time import sleep
 
 SAMPLE_RATE = 16000        
 DURATION = 2.0             
-NUM_SAMPLES = 40        
-SAVE_DIR = "data/recordings" 
+NUM_SAMPLES = 10        
+SAVE_DIR = "data/test_recordings" 
 
 
 def record_audio(name: str):

@@ -69,14 +69,14 @@ def live_predict(model, encoder, fs=16000, duration=2.0, top_n=3):
     final = np.concatenate((mfcc, delta, delta_delta), axis=1)
 
     # === Pad to model length ===
-    target_len = model.input_shape[1]      # frames
-    num_features = model.input_shape[2]    # feature dims
+    target_len = model.input_shape[1]      
+    num_features = model.input_shape[2]   
 
     final = pad_to_model_length(final, target_len)
-    final = np.expand_dims(final, axis=-1)      # add channel dim
-    final = np.expand_dims(final, axis=0)       # add batch dim
+    final = np.expand_dims(final, axis=-1) 
+    final = np.expand_dims(final, axis=0) 
 
-    print("✅ Running model prediction...")
+    print("Running model prediction...")
     probs = model.predict(final, verbose=0)[0]
 
     # Get top predictions
@@ -93,10 +93,10 @@ def live_predict(model, encoder, fs=16000, duration=2.0, top_n=3):
 
 if __name__ == "__main__":
     # Load model
-    model = load_model("src/model/speech_model.keras")
+    model = load_model("data/networks/speech_model.keras")
 
     # Load label encoder
-    with open("src/model/label_encoder.pkl", "rb") as f:
+    with open("data/networks/label_encoder.pkl", "rb") as f:
         encoder = pickle.load(f)
     while True:
         live_predict(model, encoder)
