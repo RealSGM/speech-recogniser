@@ -190,3 +190,6 @@ def get_mfcc_dataset() -> tuple[np.ndarray, np.ndarray]:
     padded = np.expand_dims(padded, -1)  # Add channel dimension
 
     return padded, np.array(labels)
+
+if __name__ == "__main__":
+    create_mfcc_dataset()
