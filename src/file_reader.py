@@ -2,7 +2,7 @@ import os
 import soundfile as sf
 import numpy as np
 
-recording_directory = "data/recordings"
+RECORDING_DIRECTORY = "data/recordings"
 
 
 def read_audiofile(file_path: str) -> tuple[np.ndarray, int]:
@@ -14,8 +14,8 @@ def load_dataset():
     print("- Loading dataset...")
     audio_data, labels = [], []
     
-    for label in os.listdir(recording_directory):
-        folder = os.path.join(recording_directory, label)
+    for label in os.listdir(RECORDING_DIRECTORY):
+        folder = os.path.join(RECORDING_DIRECTORY, label)
         
         if not os.path.isdir(folder):
             continue

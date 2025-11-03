@@ -1,9 +1,9 @@
 import numpy as np
-from scipy.fftpack import dct
 import os
 import file_reader
+from scipy.fftpack import dct
 
-save_path = "data/mfccs"
+SAVE_PATH = "data/mfccs"
 
 
 def pad_mfcc_features(data: list[np.ndarray], max_len: int, num_features: int) -> np.ndarray:
@@ -27,16 +27,16 @@ def compute_deltas(mfcc_features: np.ndarray, N: int = 2) -> np.ndarray:
         deltas[t] = numerator / denominator
     return deltas
 
+
 def pre_emphasise(signal: np.ndarray, coeff: float = 0.97) -> np.ndarray:
     return np.append(signal[0], signal[1:] - coeff * signal[:-1])
 
 
+## Preprocess the signal by applying pre-emphasis and normalisation
 def preprocess_signal(signal: np.ndarray, coeff: float = 0.97) -> np.ndarray:
-    # Pre-emphasise
-    emphasized_signal = np.append(signal[0], signal[1:] - coeff * signal[:-1])
-    # Mean normalisation
-    normalized_signal = emphasized_signal - np.mean(emphasized_signal)
-    return normalized_signal
+    emphasised_signal = np.append(signal[0], signal[1:] - coeff * signal[:-1])
+    normalised_signal = emphasised_signal - np.mean(emphasised_signal)
+    return normalised_signal
 
 
 def mag_and_phase(speechFrame: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -89,24 +89,28 @@ def mel_triangular_filterbank(magspec: np.ndarray, num_channels: int, fs: int) -
 def mfcc(speechFrame: np.ndarray, fs: int, num_mel_filters: int, num_ceps: int) -> np.ndarray:
     magnitude, _ = mag_and_phase(speechFrame)
     
-    frame_energy = np.log(np.sum(magnitude ** 2) + 1e-10) # Add 1e-10 to avoid log(0)
+    frame_energy = np.log(np.sum(magnitude ** 2) + 1e-10)
     
     mel_fbank = mel_triangular_filterbank(magnitude, num_mel_filters, fs)
-    log_mel_fbank = np.log(mel_fbank + 1e-10) # - Add 1e-10 to avoid log(0)
+    log_mel_fbank = np.log(mel_fbank + 1e-10)
     mfcc = dct(log_mel_fbank, type=2, norm='ortho')[:num_ceps]
     return np.append(mfcc, frame_energy)
 
 
+## Extract MFCC features from the speech signal
 def get_mfcc_signal(speechSignal: np.ndarray, fs: int, frame_size: float, frame_stride: float, num_mel_filters: int, num_ceps: int) -> np.ndarray:
+    # Calculate frame parameters
     signal_length = len(speechSignal)
     frame_length = int(frame_size * fs)
     frame_step = int(frame_stride * fs)
     num_frames = int(np.ceil(float(np.abs(signal_length - frame_length)) / frame_step)) + 1
 
+    # Pad signal to make sure that all frames have equal number of samples
     pad_signal_length = num_frames * frame_step + frame_length
     z = np.zeros((pad_signal_length - signal_length))
     pad_signal = np.append(speechSignal, z)
 
+    # Extract MFCC features for each frame
     mfcc_features = []
     for i in range(num_frames):
         start_index = i * frame_step
@@ -118,11 +122,11 @@ def get_mfcc_signal(speechSignal: np.ndarray, fs: int, frame_size: float, frame_
     return np.array(mfcc_features)
 
 
+## Save MFCC features to the disk
 def save_mfcc(label: str, mfcc_features: np.ndarray, index: int) -> None:
-    label_dir = os.path.join(save_path, label)
+    label_dir = os.path.join(SAVE_PATH, label)
     if not os.path.exists(label_dir):
         os.makedirs(label_dir)
-    
     np.save(f"{label_dir}/mfcc_{index:03d}.npy", mfcc_features)
 
 
@@ -139,23 +143,21 @@ def create_mfcc_dataset() -> None:
         delta = compute_deltas(mfcc)
         delta_delta = compute_deltas(delta)
         final = np.concatenate((mfcc, delta, delta_delta), axis=1)
-        
-        print(f"MFCC+Energy shape: {mfcc.shape}")
-        print(f"Final combined feature shape: {final.shape}")
         print(f"MFCC shape for sample {i}: {final.shape} of label '{label}'")
         
         save_mfcc(label, final, i)
 
 
+## Load MFCC dataset from disk, creating it if necessary
 def get_mfcc_dataset() -> tuple[np.ndarray, np.ndarray]:
-    if os.listdir(save_path) == []:
+    if os.listdir(SAVE_PATH) == []:
         create_mfcc_dataset()
 
     data = []
     labels = []
 
-    for label in os.listdir(save_path):
-        label_dir = os.path.join(save_path, label)
+    for label in os.listdir(SAVE_PATH):
+        label_dir = os.path.join(SAVE_PATH, label)
         if not os.path.isdir(label_dir):
             continue
 
@@ -173,7 +175,6 @@ def get_mfcc_dataset() -> tuple[np.ndarray, np.ndarray]:
     # Pad them
     max_len = max(m.shape[0] for m in data)
     num_features = data[0].shape[1]
-
     padded = pad_mfcc_features(data, max_len, num_features)
 
     return padded, np.array(labels)

@@ -1,12 +1,12 @@
 import numpy as np
+import tensorflow as tf
 from pathlib import Path
 from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from keras.utils import to_categorical
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Flatten, Conv2D, InputLayer, MaxPooling2D
-import tensorflow as tf
+
 
 
 def encode_labels(labels, class_list):
