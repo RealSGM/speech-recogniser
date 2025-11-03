@@ -6,7 +6,7 @@ from sklearn import metrics
 from keras.utils import to_categorical
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Flatten, Conv2D, InputLayer, MaxPooling2D
-
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 
 def encode_labels(labels, class_list):
@@ -18,7 +18,7 @@ def encode_labels(labels, class_list):
 
 def create_model(input_shape=(40, 21, 1), num_classes=10):
     model = Sequential()
-    model.add(InputLayer(input_shape=input_shape))
+    model.add(InputLayer(shape=input_shape))
     model.add(Conv2D(64, (3, 3), activation='relu'))
     model.add(Conv2D(64, (3, 3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(3, 3)))
@@ -31,12 +31,28 @@ def create_model(input_shape=(40, 21, 1), num_classes=10):
 
 
 def train_model(model, X_train, y_train, X_val, y_val, epochs=25, batch_size=32):
+    # Stop early if no improvement
+    early_stop = EarlyStopping(
+        monitor='val_loss',
+        patience=5,
+        restore_best_weights=True
+    )
+    
+    learning_rate_reduction = ReduceLROnPlateau(
+        monitor='val_loss',
+        patience=3,
+        factor=0.5,
+        min_lr=0.00001, 
+        verbose=1
+    )
+    
     history = model.fit(
         X_train, y_train,
         validation_data=(X_val, y_val),
         batch_size=batch_size,
         epochs=epochs,
-        verbose="auto"
+        verbose="auto",
+        callbacks=[early_stop]
     )
     return history
 
@@ -47,12 +63,20 @@ def evaluate_model(model, X_test, y_test, encoder):
     actual = np.argmax(y_test, axis=1)
 
     accuracy = metrics.accuracy_score(actual, predicted)
-    print(f"\nTest Accuracy: {accuracy * 100:.2f}%\n")
-
     cm = metrics.confusion_matrix(actual, predicted)
     metrics.ConfusionMatrixDisplay(confusion_matrix=cm).plot()
 
-    print(metrics.classification_report(actual, predicted, target_names=encoder.classes_))
+    print("\nClassification Report:\n")
+    print(f"\nTest Accuracy: {accuracy * 100:.2f}%\n")
+    print(
+        metrics.classification_report(
+            actual, 
+            predicted, 
+            labels=range(len(encoder.classes_)),
+            target_names=encoder.classes_,
+            zero_division=0
+        )
+    )
 
 
 def predict_sample(model, X_sample, encoder):

@@ -8,7 +8,6 @@ import accoustic_modeller as am
 
 if __name__ == "__main__":
     data, labels = get_mfcc_dataset()
-    print(f"Total MFCC samples loaded: {len(data)}")
     print(f"Data shape: {data.shape}, Labels shape: {len(labels)}")
     
     encoded_labels, encoder = am.encode_labels(labels, sorted(set(labels)))
