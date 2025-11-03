@@ -3,7 +3,8 @@ import os
 import file_reader
 from scipy.fftpack import dct
 
-SAVE_PATH = "data/mfccs"
+TRAINING_PATH = "data/training_mfccs"
+TESTING_PATH = "data/testing_mfccs"
 MIN_INT = 1e-10
 
 
@@ -182,15 +183,15 @@ def get_mfcc_signal(speechSignal: np.ndarray, fs: int, frame_size: float, frame_
 
 
 ## Save MFCC features to the disk
-def save_mfcc(label: str, mfcc_features: np.ndarray, index: int) -> None:
-    label_dir = os.path.join(SAVE_PATH, label)
+def save_mfcc(label: str, mfcc_features: np.ndarray, index: int, path: str) -> None:
+    label_dir = os.path.join(path, label)
     if not os.path.exists(label_dir):
         os.makedirs(label_dir)
     np.save(f"{label_dir}/mfcc_{index:03d}.npy", mfcc_features)
 
 
-def create_mfcc_dataset() -> None:
-    audio_data, labels = file_reader.load_dataset()
+def create_mfcc_dataset(path: str, file_path) -> None:
+    audio_data, labels = file_reader.load_dataset(file_path)
     print("Number of audio files loaded:", len(audio_data))
     
     for i in range(len(audio_data)):
@@ -204,19 +205,19 @@ def create_mfcc_dataset() -> None:
         final = np.concatenate((mfcc, delta, delta_delta), axis=1)
         print(f"MFCC shape for sample {i}: {final.shape} of label '{label}'")
         
-        save_mfcc(label, final, i)
+        save_mfcc(label, final, i, path)
 
 
 ## Load MFCC dataset from disk, creating it if necessary
-def get_mfcc_dataset() -> tuple[np.ndarray, np.ndarray]:
-    if os.listdir(SAVE_PATH) == []:
-        create_mfcc_dataset()
+def get_mfcc_dataset(path: str, file_path: str) -> tuple[np.ndarray, np.ndarray]:
+    if os.listdir(path) == []:
+        create_mfcc_dataset(path, file_path)
 
     data = []
     labels = []
 
-    for label in os.listdir(SAVE_PATH):
-        label_dir = os.path.join(SAVE_PATH, label)
+    for label in os.listdir(path):
+        label_dir = os.path.join(path, label)
         if not os.path.isdir(label_dir):
             continue
 
@@ -237,4 +238,4 @@ def get_mfcc_dataset() -> tuple[np.ndarray, np.ndarray]:
     return padded, np.array(labels)
 
 if __name__ == "__main__":
-    create_mfcc_dataset()
+    create_mfcc_dataset(file_reader.TRAINING_DIRECTORY, file_reader.TRAINING_DIRECTORY)
