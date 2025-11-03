@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+import pickle
 from sklearn.preprocessing import LabelEncoder
 from sklearn import metrics
 from keras.utils import to_categorical
@@ -7,6 +8,11 @@ from keras.models import Sequential
 from keras.layers import Dense, Activation, Flatten, Conv2D, InputLayer, MaxPooling2D, Dropout, BatchNormalization, GlobalAveragePooling2D
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras.optimizers import Adam
+
+
+SAVE_PATH = "data/networks"
+MODEL_PATH = f"{SAVE_PATH}/speech_model.keras"
+ENCODER_PATH = f"{SAVE_PATH}/label_encoder.pkl"
 
 
 def encode_labels(labels, class_list):
@@ -90,3 +96,19 @@ def predict_sample(model, X_sample, encoder):
     predicted_class = encoder.inverse_transform(predicted_id)
     print(f'Predicted class: {predicted_class[0]}')
     return predicted_class[0]
+
+
+# Save the model and encoder
+def save_model(model, encoder):
+    model.save(MODEL_PATH)
+    
+    with open(ENCODER_PATH, "wb") as f:
+        pickle.dump(encoder, f)
+
+
+# Load the model and encoder
+def load_model() -> tf.keras.Model:
+    model = tf.keras.models.load_model(MODEL_PATH)
+    with open(ENCODER_PATH, "rb") as f:
+        encoder = pickle.load(f)
+    return model, encoder
