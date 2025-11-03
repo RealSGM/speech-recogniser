@@ -4,8 +4,21 @@ import file_reader
 from scipy.fftpack import dct
 
 SAVE_PATH = "data/mfccs"
+MIN_INT = 1e-10
 
 
+def spectral_features(magnitude: np.ndarray, fs: int) -> np.ndarray:
+    freqs = np.linspace(0, fs / 2, len(magnitude)//2)
+    mag = magnitude[:len(freqs)]
+    mag /= np.sum(mag) + MIN_INT
+
+    centroid = np.sum(freqs * mag)
+    spread = np.sqrt(np.sum(((freqs - centroid) ** 2) * mag))
+    flatness = np.exp(np.mean(np.log(mag + MIN_INT))) / (np.mean(mag) + MIN_INT)
+    return np.array([centroid, spread, flatness])
+
+
+## Ensure all MFCC feature arrays have the same length by padding with zeros
 def pad_mfcc_features(data: list[np.ndarray], max_len: int, num_features: int) -> np.ndarray:
     padded = np.zeros((len(data), max_len, num_features))
     for i, m in enumerate(data):
@@ -88,13 +101,14 @@ def mel_triangular_filterbank(magspec: np.ndarray, num_channels: int, fs: int) -
 
 def mfcc(speechFrame: np.ndarray, fs: int, num_mel_filters: int, num_ceps: int) -> np.ndarray:
     magnitude, _ = mag_and_phase(speechFrame)
-    
-    frame_energy = np.log(np.sum(magnitude ** 2) + 1e-10)
-    
+    frame_energy = np.log(np.sum(magnitude ** 2) + MIN_INT)
     mel_fbank = mel_triangular_filterbank(magnitude, num_mel_filters, fs)
-    log_mel_fbank = np.log(mel_fbank + 1e-10)
+    log_mel_fbank = np.log(mel_fbank + MIN_INT)
     mfcc = dct(log_mel_fbank, type=2, norm='ortho')[:num_ceps]
-    return np.append(mfcc, frame_energy)
+    
+    spec_stats = spectral_features(magnitude, fs)
+    
+    return np.concatenate([mfcc, [frame_energy], spec_stats])
 
 
 ## Extract MFCC features from the speech signal
@@ -138,7 +152,7 @@ def create_mfcc_dataset() -> None:
         label = labels[i]
         
         signal = preprocess_signal(audio_data[i])
-        mfcc = get_mfcc_signal(signal, fs=16000, frame_size=0.025, frame_stride=0.01, num_mel_filters=40, num_ceps=13)
+        mfcc = get_mfcc_signal(signal, fs=16000, frame_size=0.025, frame_stride=0.005, num_mel_filters=40, num_ceps=13)
         mfcc = (mfcc - np.mean(mfcc)) / np.std(mfcc)  # Normalise MFCC
         delta = compute_deltas(mfcc)
         delta_delta = compute_deltas(delta)

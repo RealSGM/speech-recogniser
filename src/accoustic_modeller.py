@@ -67,7 +67,6 @@ def evaluate_model(model, X_test, y_test, encoder):
     metrics.ConfusionMatrixDisplay(confusion_matrix=cm).plot()
 
     print("\nClassification Report:\n")
-    print(f"\nTest Accuracy: {accuracy * 100:.2f}%\n")
     print(
         metrics.classification_report(
             actual, 
