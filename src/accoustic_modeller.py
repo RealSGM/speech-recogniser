@@ -1,12 +1,12 @@
 import numpy as np
 import tensorflow as tf
-from pathlib import Path
 from sklearn.preprocessing import LabelEncoder
 from sklearn import metrics
 from keras.utils import to_categorical
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten, Conv2D, InputLayer, MaxPooling2D
+from keras.layers import Dense, Activation, Flatten, Conv2D, InputLayer, MaxPooling2D, Dropout, BatchNormalization, GlobalAveragePooling2D
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from keras.optimizers import Adam
 
 
 def encode_labels(labels, class_list):
@@ -16,17 +16,22 @@ def encode_labels(labels, class_list):
     return encoded, encoder
 
 
-def create_model(input_shape=(40, 21, 1), num_classes=10):
+def create_model(input_shape, num_classes):
     model = Sequential()
     model.add(InputLayer(shape=input_shape))
     model.add(Conv2D(64, (3, 3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(3, 3)))
+    model.add(Conv2D(128, (3, 3), activation='relu'))
     model.add(Conv2D(64, (3, 3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(3, 3)))
     model.add(Flatten())
+    model.add(Dropout(0.5))
     model.add(Dense(256, activation='relu'))
+    model.add(BatchNormalization()) 
     model.add(Dense(num_classes, activation='softmax'))
 
-    model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer='adam')
+    adam = Adam(learning_rate=0.0005)
+    model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=adam)
     return model
 
 
@@ -52,7 +57,7 @@ def train_model(model, X_train, y_train, X_val, y_val, epochs=25, batch_size=32)
         batch_size=batch_size,
         epochs=epochs,
         verbose="auto",
-        callbacks=[early_stop]
+        callbacks=[learning_rate_reduction, early_stop]
     )
     return history
 
@@ -67,6 +72,7 @@ def evaluate_model(model, X_test, y_test, encoder):
     metrics.ConfusionMatrixDisplay(confusion_matrix=cm).plot()
 
     print("\nClassification Report:\n")
+    print(f"\nTest Accuracy: {accuracy * 100:.2f}%\n")
     print(
         metrics.classification_report(
             actual, 

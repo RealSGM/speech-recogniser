@@ -10,12 +10,22 @@ MIN_INT = 1e-10
 def spectral_features(magnitude: np.ndarray, fs: int) -> np.ndarray:
     freqs = np.linspace(0, fs / 2, len(magnitude)//2)
     mag = magnitude[:len(freqs)]
-    mag /= np.sum(mag) + MIN_INT
+    mag /= np.sum(mag) + 1e-10
 
+    # Basic stats
     centroid = np.sum(freqs * mag)
     spread = np.sqrt(np.sum(((freqs - centroid) ** 2) * mag))
-    flatness = np.exp(np.mean(np.log(mag + MIN_INT))) / (np.mean(mag) + MIN_INT)
-    return np.array([centroid, spread, flatness])
+    flatness = np.exp(np.mean(np.log(mag + 1e-10))) / (np.mean(mag) + 1e-10)
+    
+    # Additional features
+    cumsum_mag = np.cumsum(mag)
+    rolloff = freqs[np.searchsorted(cumsum_mag, 0.85)]  # 85% roll-off
+    skewness = np.sum(((freqs - centroid) ** 3) * mag) / (spread**3 + 1e-10)
+    kurtosis = np.sum(((freqs - centroid) ** 4) * mag) / (spread**4 + 1e-10)
+    slope = (mag[-1] - mag[0]) / (freqs[-1] - freqs[0] + 1e-10)
+    
+    return np.array([centroid, spread, flatness, rolloff, skewness, kurtosis, slope])
+
 
 
 ## Ensure all MFCC feature arrays have the same length by padding with zeros
@@ -108,7 +118,11 @@ def mfcc(speechFrame: np.ndarray, fs: int, num_mel_filters: int, num_ceps: int) 
     
     spec_stats = spectral_features(magnitude, fs)
     
-    return np.concatenate([mfcc, [frame_energy], spec_stats])
+    spec_stats[0] /= (fs / 2)  # centroid
+    spec_stats[1] /= (fs / 2)  # spread
+    spec_stats[2] = np.clip(spec_stats[2], 0, 1)  # flatness
+
+    return np.concatenate([mfcc, [frame_energy]])
 
 
 ## Extract MFCC features from the speech signal
@@ -152,7 +166,7 @@ def create_mfcc_dataset() -> None:
         label = labels[i]
         
         signal = preprocess_signal(audio_data[i])
-        mfcc = get_mfcc_signal(signal, fs=16000, frame_size=0.025, frame_stride=0.005, num_mel_filters=40, num_ceps=13)
+        mfcc = get_mfcc_signal(signal, fs=16000, frame_size=0.025, frame_stride=0.01, num_mel_filters=40, num_ceps=26)
         mfcc = (mfcc - np.mean(mfcc)) / np.std(mfcc)  # Normalise MFCC
         delta = compute_deltas(mfcc)
         delta_delta = compute_deltas(delta)

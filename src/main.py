@@ -4,6 +4,7 @@ load_dotenv()
 from feature_extractor import get_mfcc_dataset
 from sklearn.model_selection import train_test_split
 import accoustic_modeller as am
+import numpy as np
 
 
 if __name__ == "__main__":
