@@ -1,13 +1,14 @@
 from dotenv import load_dotenv
 load_dotenv() 
 
-from feature_extractor import get_mfcc_dataset
-from sklearn.model_selection import train_test_split
+import file_reader as fr
+import feature_extractor as fe
 import acoustic_modeller as am
+from sklearn.model_selection import train_test_split
 
 
 if __name__ == "__main__":
-    data, labels = get_mfcc_dataset()
+    data, labels = fe.get_mfcc_dataset(fe.TRAINING_PATH, fr.TRAINING_DIRECTORY)
     encoded_labels, encoder = am.encode_labels(labels, sorted(set(labels)))
     
     X_train, X_tmp, y_train, y_tmp = train_test_split(

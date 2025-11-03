@@ -1,17 +1,38 @@
 from dotenv import load_dotenv
 load_dotenv() 
 
-from feature_extractor import get_mfcc_dataset
-from sklearn.model_selection import train_test_split
+import file_reader as fr
+import feature_extractor as fe
 import acoustic_modeller as am
-import numpy as np
+from sklearn import metrics
 
 
 if __name__ == "__main__":
     model, encoder = am.load_model()
     
-    data, labels = get_mfcc_dataset()
+    data, labels = fe.get_mfcc_dataset(fe.TESTING_PATH, fr.TESTING_DIRECTORY)
     encoded_labels, _ = am.encode_labels(labels, sorted(set(labels)))
     
-    X_train, X_test, y_train, y_test = train_test_split(data, encoded_labels, test_size=0.2)
-    am.evaluate_model(model, X_test, y_test, encoder)
+    # Loop through all data and evaluate
+    predictions = model.predict(data, verbose=0)
+    prediction_indices = np.argmax(predictions, axis=1)
+    actual_indices = np.argmax(encoded_labels, axis=1)
+    predicted_labels = encoder.inverse_transform(prediction_indices)
+    
+    accuracy = metrics.accuracy_score(actual_indices, prediction_indices)
+    
+    print(f"\n Test Accuracy: {accuracy * 100:.2f}%")
+
+    print("\n Classification Report:\n")
+    print(
+        metrics.classification_report(
+            actual_indices,
+            prediction_indices,
+            labels=range(len(encoder.classes_)),
+            target_names=encoder.classes_,
+            zero_division=0
+        )
+    )
+
+    cm = metrics.confusion_matrix(actual_indices, prediction_indices)
+    metrics.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=encoder.classes_).plot()
