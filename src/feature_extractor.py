@@ -178,3 +178,8 @@ def get_mfcc_dataset() -> tuple[np.ndarray, np.ndarray]:
     padded = pad_mfcc_features(data, max_len, num_features)
 
     return padded, np.array(labels)
+
+
+
+if __name__ == "__main__":
+    create_mfcc_dataset()
