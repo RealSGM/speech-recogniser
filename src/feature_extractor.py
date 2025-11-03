@@ -6,6 +6,14 @@ import file_reader
 save_path = "data/mfccs"
 
 
+def pad_mfcc_features(data: list[np.ndarray], max_len: int, num_features: int) -> np.ndarray:
+    padded = np.zeros((len(data), max_len, num_features))
+    for i, m in enumerate(data):
+        length = m.shape[0]
+        padded[i, :length, :] = m
+    return padded
+
+
 def compute_deltas(mfcc_features: np.ndarray, N: int = 2) -> np.ndarray:
     deltas = np.zeros_like(mfcc_features)
     for t in range(len(mfcc_features)):
@@ -29,20 +37,6 @@ def preprocess_signal(signal: np.ndarray, coeff: float = 0.97) -> np.ndarray:
     # Mean normalisation
     normalized_signal = emphasized_signal - np.mean(emphasized_signal)
     return normalized_signal
-
-
-def standardise_signal_lengths(signals: np.ndarray) -> np.ndarray:
-    target_length = max(signal.shape[0] for signal in signals)
-    standardized = []
-    for signal in signals:
-        if signal.shape[0] < target_length:
-            pad_width = target_length - signal.shape[0]
-            padded_signal = np.pad(signal, ((0, pad_width), (0, 0)), mode='constant')
-            standardized.append(padded_signal)
-        else:
-            truncated_signal = signal[:target_length, :]
-            standardized.append(truncated_signal)
-    return np.array(standardized)
 
 
 def mag_and_phase(speechFrame: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -180,11 +174,6 @@ def get_mfcc_dataset() -> tuple[np.ndarray, np.ndarray]:
     max_len = max(m.shape[0] for m in data)
     num_features = data[0].shape[1]
 
-    padded = np.zeros((len(data), max_len, num_features))
-    for i, m in enumerate(data):
-        length = m.shape[0]
-        padded[i, :length, :] = m
-
-    padded = np.expand_dims(padded, -1)
+    padded = pad_mfcc_features(data, max_len, num_features)
 
     return padded, np.array(labels)

@@ -1,4 +1,4 @@
-from feature_extractor import get_mfcc_dataset, standardise_signal_lengths
+from feature_extractor import get_mfcc_dataset
 from sklearn.model_selection import train_test_split
 import accoustic_modeller as am
 import numpy as np
@@ -6,7 +6,6 @@ import numpy as np
 
 if __name__ == "__main__":
     data, labels = get_mfcc_dataset()
-    data = standardise_signal_lengths(data)
     
     print(f"Total MFCC samples loaded: {len(data)}")
 
