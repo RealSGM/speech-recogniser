@@ -169,17 +169,10 @@ def get_mfcc_dataset() -> tuple[np.ndarray, np.ndarray]:
             data.append(mfcc_data)
             labels.append(label)
 
-    # Normalise MFCCs
-    data = [mfcc / np.max(np.abs(mfcc)) for mfcc in data]
-
     # Pad them
     max_len = max(m.shape[0] for m in data)
     num_features = data[0].shape[1]
     padded = pad_mfcc_features(data, max_len, num_features)
+    padded = np.expand_dims(padded, -1)  # Add channel dimension
 
     return padded, np.array(labels)
-
-
-
-if __name__ == "__main__":
-    create_mfcc_dataset()
