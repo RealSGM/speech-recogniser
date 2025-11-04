@@ -34,3 +34,9 @@ if __name__ == "__main__":
             zero_division=0
         )
     )
+    
+    # print confusion matrix
+    cm = metrics.confusion_matrix(actual_indices, prediction_indices)
+    print("Confusion Matrix:\n", cm)
+    model.summary()
+    am.plot_confusion_matrix(cm, encoder)

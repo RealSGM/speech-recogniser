@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 import pickle
 import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.preprocessing import LabelEncoder
 from sklearn import metrics
 from keras.utils import to_categorical
@@ -118,8 +119,26 @@ def plot_training_history(history):
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='upper left')
+    
+    # Plot heatmap of confusion matrix
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=encoder.classes_, yticklabels=encoder.classes_)
+    plt.title('Confusion Matrix')
+    plt.ylabel('Actual')
+    plt.xlabel('Predicted')
+    
 
     plt.show()
+
+
+def plot_confusion_matrix(cm, encoder):
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=encoder.classes_, yticklabels=encoder.classes_)
+    plt.title('Confusion Matrix')
+    plt.ylabel('Actual')
+    plt.xlabel('Predicted')
+    plt.show()
+
 
 # Save the model and encoder
 def save_model(model, encoder):

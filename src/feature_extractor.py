@@ -233,5 +233,6 @@ def get_mfcc_dataset(path: str, file_path: str, include_noisy: bool = False) -> 
 
     return padded, np.array(labels)
 
+
 if __name__ == "__main__":
     create_mfcc_dataset(file_reader.TRAINING_DIRECTORY, file_reader.TRAINING_DIRECTORY)
