@@ -33,6 +33,8 @@ def load_dataset(path: str, include_noisy: bool = False) -> tuple[list[np.ndarra
             labels.append(label)
     
     if include_noisy:
-        audio_data, labels = nr.apply_noise_to_signals(audio_data, np.array(labels))
+        new_audio_data, new_labels = nr.apply_noise_to_signals(audio_data, np.array(labels))
+        audio_data.extend(new_audio_data)
+        labels.extend(new_labels)
     
     return audio_data, labels

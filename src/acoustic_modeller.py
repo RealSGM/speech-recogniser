@@ -25,7 +25,7 @@ def encode_labels(labels, class_list):
     return encoded, encoder
 
 
-def create_simplemodel(input_shape, num_classes):
+def create_model(input_shape, num_classes):
     model = get_simple_model(input_shape, num_classes)
     adam = Adam(learning_rate=0.0005)
     model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=adam) # type: ignore
@@ -33,18 +33,17 @@ def create_simplemodel(input_shape, num_classes):
 
 
 def get_simple_model(input_shape: tuple, num_classes: int) -> tf.keras.Model: # type: ignore
-    model = Sequential()
-    model.add(InputLayer(shape=input_shape))
-    model.add(Conv2D(64, (3, 3), activation='relu'))
-    model.add(MaxPooling2D(pool_size=(3, 3)))
-    model.add(Conv2D(128, (3, 3), activation='relu'))
-    model.add(Conv2D(64, (3, 3), activation='relu'))
-    model.add(MaxPooling2D(pool_size=(3, 3)))
-    model.add(Flatten())
-    model.add(Dropout(0.5))
-    model.add(Dense(256, activation='relu'))
-    model.add(BatchNormalization()) 
-    model.add(Dense(num_classes, activation='softmax'))
+    model=Sequential() 
+    model.add(InputLayer(shape=input_shape)) 
+    model.add(Conv2D(64, (3, 3), activation='relu')) 
+    model.add(Conv2D(64, (3, 3), activation='relu')) 
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(3, 3))) 
+    model.add(Flatten()) 
+    model.add(Dense(256)) 
+    model.add(Activation('relu')) 
+    model.add(Dense(num_classes)) 
+    model.add(Activation('softmax')) 
     return model
 
 

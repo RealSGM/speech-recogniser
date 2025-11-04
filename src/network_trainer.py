@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 
 
 if __name__ == "__main__":
-    data, labels = fe.get_mfcc_dataset(fe.TRAINING_PATH, fr.TRAINING_DIRECTORY, include_noisy=False)
+    data, labels = fe.get_mfcc_dataset(fe.TRAINING_PATH, fr.TRAINING_DIRECTORY, include_noisy=True)
     
     encoded_labels, encoder = am.encode_labels(labels, sorted(set(labels)))
     
