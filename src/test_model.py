@@ -1,27 +1,13 @@
-from keras.models import load_model
-import pickle
 from time import sleep
 from feature_extractor import *
 import sounddevice as sd
-import sounddevice as sd
+import soundfile as sf
 import numpy as np
-from scipy.io.wavfile import write
-from time import sleep
+import pickle
+from keras.models import load_model
+from feature_extractor import preprocess_signal, get_mfcc_signal, compute_deltas
+from noise_reduction import load_noise, add_noise, spectral_subtraction
 
-from feature_extractor import (
-    preprocess_signal,
-    get_mfcc_signal,
-    compute_deltas
-)
-
-# def trim_silence(signal, fs, thresh=0.015):
-#     abs_sig = np.abs(signal)
-#     mask = abs_sig > thresh
-#     if not np.any(mask):
-#         return signal  # nothing detected, return raw
-#     start = np.argmax(mask)
-#     end = len(mask) - np.argmax(mask[::-1])
-#     return signal[start:end]
 
 def pad_to_model_length(features, target_len):
     """Pads or trims MFCC to match model input length."""
@@ -36,22 +22,10 @@ def pad_to_model_length(features, target_len):
     return padded
 
 
-def live_predict(model, encoder, fs=16000, duration=2.0, top_n=3):
-    print("\nPress ENTER to record...")
-    input()
-    sleep(0.75)
-    print("Recording...")
-    audio = sd.rec(int(duration * fs), samplerate=fs, channels=1, dtype=np.float32)
-    sd.wait()
+def predict(audio, model, encoder, fs=16000, top_n=3):
     audio = audio.flatten()
-
-    # print("✅ Recorded. Trimming silence...")
-    # audio = trim_silence(audio, fs)
-
-    print("✅ Preprocessing...")
     audio = preprocess_signal(audio)
 
-    # === Extract features (must match training) ===
     mfcc = get_mfcc_signal(
         audio, fs=fs,
         frame_size=0.025,
@@ -60,26 +34,18 @@ def live_predict(model, encoder, fs=16000, duration=2.0, top_n=3):
         num_ceps=26
     )
 
-    # Normalise
     mfcc = (mfcc - np.mean(mfcc)) / (np.std(mfcc) + 1e-10)
 
     delta = compute_deltas(mfcc)
     delta_delta = compute_deltas(delta)
-
     final = np.concatenate((mfcc, delta, delta_delta), axis=1)
 
-    # === Pad to model length ===
-    target_len = model.input_shape[1]      
-    num_features = model.input_shape[2]   
 
+    target_len = model.input_shape[1]
     final = pad_to_model_length(final, target_len)
     final = np.expand_dims(final, axis=-1) 
-    final = np.expand_dims(final, axis=0) 
-
-    print("Running model prediction...")
+    final = np.expand_dims(final, axis=0)   
     probs = model.predict(final, verbose=0)[0]
-
-    # Get top predictions
     top_idx = np.argsort(probs)[::-1][:top_n]
     classes = encoder.inverse_transform(top_idx)
 
@@ -87,16 +53,34 @@ def live_predict(model, encoder, fs=16000, duration=2.0, top_n=3):
     for i in range(top_n):
         print(f"{i+1}. {classes[i]} — {probs[top_idx[i]]*100:.2f}%")
 
-    print("\nDone.\n")
     return classes[0]
 
+def live_record(fs=16000, duration=2.0):
+    print("\nPress ENTER to record...")
+    input()
+    sleep(0.75)
+    print("Recording...")
+    audio = sd.rec(int(duration * fs), samplerate=fs, channels=1, dtype=np.float32)
+    sd.wait()
+    return audio, fs
 
 if __name__ == "__main__":
-    # Load model
-    model = load_model("data/networks/speech_model.keras")
 
-    # Load label encoder
-    with open("data/networks/label_encoder.pkl", "rb") as f:
-        encoder = pickle.load(f)
+    name = "hannah"
     while True:
-        live_predict(model, encoder)
+        #name = input("Name: ")
+        audio, fs = live_record()
+        #audio, fs = sf.read("data/testing_recordings/"+name+"/"+name+"_009.wav")
+        audio = audio.flatten()
+
+        # === Load babble noise ===
+        noise = load_noise("data/noise/noise.wav", len(audio))
+        noisy_audio = add_noise(audio, noise, snr_db=0)
+        #cleaned_audio = spectral_subtraction(noisy_audio,fs)
+        sd.play(noisy_audio,fs)
+        sd.wait()
+        model = load_model("data/networks/speech_model.keras")
+        # Load label encoder
+        with open("data/networks/label_encoder.pkl", "rb") as f:
+            encoder = pickle.load(f)
+        predict(noisy_audio,model,encoder)
