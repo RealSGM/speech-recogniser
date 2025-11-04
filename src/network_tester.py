@@ -34,6 +34,3 @@ if __name__ == "__main__":
             zero_division=0
         )
     )
-
-    cm = metrics.confusion_matrix(actual_indices, prediction_indices)
-    metrics.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=encoder.classes_).plot()
