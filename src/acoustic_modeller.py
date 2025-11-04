@@ -25,7 +25,7 @@ def encode_labels(labels, class_list):
     return encoded, encoder
 
 
-def create_simplemodel(input_shape, num_classes):
+def create_model(input_shape, num_classes):
     model = get_simple_model(input_shape, num_classes)
     adam = Adam(learning_rate=0.0005)
     model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=adam) # type: ignore
