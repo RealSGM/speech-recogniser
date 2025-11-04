@@ -10,13 +10,13 @@ NOISE_PATH = "data/noise/"
 SNR_AMOUNTS = [0, 10, 20]
 
 
-def load_all_noises() -> np.ndarray:
+def load_all_noises() -> list[np.ndarray]:
     noise_files = [f for f in os.listdir(NOISE_PATH) if f.endswith('.wav')]
     noises = []
     for file in noise_files:
         noise_path = os.path.join(NOISE_PATH, file)
         noises.append(sf.read(noise_path)[0])
-    return np.array(noises)
+    return noises
 
 
 def load_noise(path, target_len):
