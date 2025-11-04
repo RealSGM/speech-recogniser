@@ -7,7 +7,7 @@ from scipy import signal
 
 
 NOISE_PATH = "data/noise/"
-SNR_AMOUNTS = [-5, 5, 0, 10, 20]
+SNR_AMOUNTS = [0, 10, 20]
 
 
 def load_all_noises() -> np.ndarray:

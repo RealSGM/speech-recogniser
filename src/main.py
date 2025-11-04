@@ -43,7 +43,7 @@ test_configurations = [
         "include_noisy_data": False
     },
     {
-        "test_name": "include_noisy_data",
+        "test_name": "noisy_data",
         "use_complex_model": False,
         "use_mel_filter_bank": False,
         "use_spectral_features": False,
