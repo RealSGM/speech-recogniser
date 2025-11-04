@@ -55,6 +55,13 @@ test_configurations = [
         "use_mel_filter_bank": True,
         "use_spectral_features": True,
         "include_noisy_data": True
+    },
+    {
+        "test_name": "complex_mel_noisy",
+        "use_complex_model": True,
+        "use_mel_filter_bank": True,
+        "use_spectral_features": False,
+        "include_noisy_data": True
     }
 ]
 
