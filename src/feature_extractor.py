@@ -130,24 +130,30 @@ def mel_triangular_filterbank(magspec: np.ndarray, num_channels: int, fs: int) -
     return fbank
 
 
-def mfcc(speechFrame: np.ndarray, fs: int, num_mel_filters: int, num_ceps: int) -> np.ndarray:
+def mfcc(speechFrame: np.ndarray, fs: int, num_mel_filters: int, num_ceps: int, use_spectral_features: bool, use_mel_filter_bank: bool) -> np.ndarray:
     magnitude, _ = mag_and_phase(speechFrame)
     frame_energy = np.log(np.sum(magnitude ** 2) + MIN_INT)
-    mel_fbank = linear_rectangular_filterbank(magnitude, num_mel_filters)
-    log_mel_fbank = np.log(mel_fbank + MIN_INT)
+    
+    if use_mel_filter_bank:
+        filterbank = mel_triangular_filterbank(magnitude, num_mel_filters, fs)
+    else:
+        filterbank = linear_triangular_filterbank(magnitude, num_mel_filters)
+        
+    log_mel_fbank = np.log(filterbank + MIN_INT)
     mfcc = dct(log_mel_fbank, type=2, norm='ortho')[:num_ceps]
     
-    ## Not Implemented
-    spec_stats = spectral_features(magnitude, fs)
-    spec_stats[0] /= (fs / 2)  # centroid
-    spec_stats[1] /= (fs / 2)  # spread
-    spec_stats[2] = np.clip(spec_stats[2], 0, 1)  # flatness
-
+    if use_spectral_features:
+        spec_stats = spectral_features(magnitude, fs)
+        spec_stats[0] /= (fs / 2)  # centroid
+        spec_stats[1] /= (fs / 2)  # spread
+        spec_stats[2] = np.clip(spec_stats[2], 0, 1)  # flatness
+        return np.concatenate([mfcc, spec_stats, [frame_energy]])
+    
     return np.concatenate([mfcc, [frame_energy]])
 
 
 ## Extract MFCC features from the speech signal
-def get_mfcc_signal(speechSignal: np.ndarray, fs: int, frame_size: float, frame_stride: float, num_mel_filters: int, num_ceps: int) -> np.ndarray:
+def get_mfcc_signal(speechSignal: np.ndarray, fs: int, frame_size: float, frame_stride: float, num_mel_filters: int, num_ceps: int, use_spectral_features: bool, use_mel_filter_bank: bool) -> np.ndarray:
     # Calculate frame parameters
     signal_length = len(speechSignal)
     frame_length = int(frame_size * fs)
@@ -165,7 +171,7 @@ def get_mfcc_signal(speechSignal: np.ndarray, fs: int, frame_size: float, frame_
         start_index = i * frame_step
         end_index = start_index + frame_length
         frame = pad_signal[start_index:end_index]
-        mfcc_feat = mfcc(frame, fs, num_mel_filters, num_ceps)
+        mfcc_feat = mfcc(frame, fs, num_mel_filters, num_ceps, use_spectral_features, use_mel_filter_bank)
         mfcc_features.append(mfcc_feat)
 
     return np.array(mfcc_features)
@@ -179,7 +185,7 @@ def save_mfcc(label: str, mfcc_features: np.ndarray, index: int, path: str) -> N
     np.save(f"{label_dir}/mfcc_{index:03d}.npy", mfcc_features)
 
 
-def create_mfcc_dataset(path: str, file_path: str, include_noisy: bool = False) -> None:
+def create_mfcc_dataset(path: str, file_path: str, include_noisy: bool, use_spectral_features: bool, use_mel_filter_bank: bool) -> None:
     audio_data, labels = file_reader.load_dataset(file_path, include_noisy=include_noisy)
     print("Number of audio files loaded:", len(audio_data))
     
@@ -187,7 +193,7 @@ def create_mfcc_dataset(path: str, file_path: str, include_noisy: bool = False) 
         label = labels[i]
         
         signal = preprocess_signal(audio_data[i])
-        mfcc = get_mfcc_signal(signal, fs=16000, frame_size=0.025, frame_stride=0.01, num_mel_filters=40, num_ceps=26)
+        mfcc = get_mfcc_signal(signal, fs=16000, frame_size=0.025, frame_stride=0.01, num_mel_filters=40, num_ceps=26, use_spectral_features=use_spectral_features, use_mel_filter_bank=use_mel_filter_bank)
         mfcc = (mfcc - np.mean(mfcc)) / np.std(mfcc)  # Normalise MFCC
         delta = compute_deltas(mfcc)
         delta_delta = compute_deltas(delta)
@@ -198,9 +204,9 @@ def create_mfcc_dataset(path: str, file_path: str, include_noisy: bool = False) 
 
 
 ## Load MFCC dataset from disk, creating it if necessary
-def get_mfcc_dataset(path: str, file_path: str, include_noisy: bool = False) -> tuple[np.ndarray, np.ndarray]:
+def get_mfcc_dataset(path: str, file_path: str, include_noisy: bool, use_spectral_features: bool, use_mel_filter_bank: bool) -> tuple[np.ndarray, np.ndarray]:
     if os.listdir(path) == []:
-        create_mfcc_dataset(path, file_path, include_noisy)
+        create_mfcc_dataset(path, file_path, include_noisy, use_spectral_features, use_mel_filter_bank)
 
     data = []
     labels = []

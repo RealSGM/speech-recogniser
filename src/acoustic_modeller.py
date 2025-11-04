@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import pickle
+import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import LabelEncoder
@@ -11,11 +12,8 @@ from keras.layers import Dense, Activation, Flatten, Conv2D, InputLayer, MaxPool
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras.optimizers import Adam
 
-
 SAVE_PATH = "data/networks"
-TRAINED_MODEL_NAME = "spectral_"
-MODEL_PATH = f"{SAVE_PATH}/{TRAINED_MODEL_NAME}speech_model.keras"
-ENCODER_PATH = f"{SAVE_PATH}/{TRAINED_MODEL_NAME}label_encoder.pkl"
+GRAPH_PATH = "data/graphs"
 
 
 def encode_labels(labels, class_list):
@@ -25,15 +23,15 @@ def encode_labels(labels, class_list):
     return encoded, encoder
 
 
-def create_model(input_shape, num_classes):
-    model = get_simple_model(input_shape, num_classes)
+def create_model(input_shape, num_classes, use_complex=False):
+    model = get_complex_model(input_shape, num_classes) if use_complex else get_simple_model(input_shape, num_classes)
     adam = Adam(learning_rate=0.0005)
     model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=adam) # type: ignore
     return model
 
 
 def get_simple_model(input_shape: tuple, num_classes: int) -> tf.keras.Model: # type: ignore
-    model=Sequential() 
+    model = Sequential() 
     model.add(InputLayer(shape=input_shape)) 
     model.add(Conv2D(64, (3, 3), activation='relu')) 
     model.add(Conv2D(64, (3, 3), activation='relu')) 
@@ -62,6 +60,7 @@ def get_complex_model(input_shape: tuple, num_classes: int) -> tf.keras.Model: #
     model.add(Dense(num_classes, activation='softmax'))
     return model
 
+
 def train_model(model, X_train, y_train, X_val, y_val, epochs=25, batch_size=32):
     # Stop early if no improvement
     early_stop = EarlyStopping(
@@ -89,26 +88,34 @@ def train_model(model, X_train, y_train, X_val, y_val, epochs=25, batch_size=32)
     return history
 
 
-def evaluate_model(model, X_test, y_test, encoder):
+def evaluate_model(model, X_test, y_test, encoder, test_name: str = "", elapsed_time: float = 0.0):
     predicted_probs = model.predict(X_test, verbose=0)
     predicted = np.argmax(predicted_probs, axis=1)
     actual = np.argmax(y_test, axis=1)
 
     accuracy = metrics.accuracy_score(actual, predicted)
-    cm = metrics.confusion_matrix(actual, predicted)
-    metrics.ConfusionMatrixDisplay(confusion_matrix=cm).plot()
 
-    print("\nClassification Report:\n")
-    print(f"\nTest Accuracy: {accuracy * 100:.2f}%\n")
-    print(
-        metrics.classification_report(
-            actual, 
-            predicted, 
-            labels=range(len(encoder.classes_)),
-            target_names=encoder.classes_,
-            zero_division=0
-        )
-    )
+    # cm = metrics.confusion_matrix(actual, predicted)
+    # print("\nClassification Report:\n")
+    # print(
+    #     metrics.classification_report(
+    #         actual, 
+    #         predicted, 
+    #         labels=range(len(encoder.classes_)),
+    #         target_names=encoder.classes_,
+    #         zero_division=0
+    #     )
+    # )
+    
+    # Save elapsed time and accuracy to file
+    
+    # Create graph directory if it doesn't exist
+    if not os.path.exists(f"{GRAPH_PATH}/{test_name}"):
+        os.makedirs(f"{GRAPH_PATH}/{test_name}")
+    
+    with open(f"{GRAPH_PATH}/{test_name}/training.txt", "w") as f:
+        f.write(f"Elapsed Time: {elapsed_time:.2f} seconds\n")
+        f.write(f"Test Accuracy: {accuracy * 100:.2f}%\n")
 
 
 def predict_sample(model, X_sample, encoder):
@@ -119,7 +126,7 @@ def predict_sample(model, X_sample, encoder):
     return predicted_class[0]
 
 
-def plot_training_history(history):
+def plot_training_history(history, test_name):
     # Plot training & validation accuracy values
     plt.figure(figsize=(12, 4))
     plt.subplot(1, 2, 1)
@@ -139,29 +146,47 @@ def plot_training_history(history):
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='upper left')
     
-    plt.show()
+    # Create graph directory if it doesn't exist
+    if not os.path.exists(f"{GRAPH_PATH}/{test_name}"):
+        os.makedirs(f"{GRAPH_PATH}/{test_name}")
+        
+    plt.savefig(f"{GRAPH_PATH}/{test_name}/training_history.png")
 
 
-def plot_confusion_matrix(cm, encoder):
+def plot_confusion_matrix(cm, encoder, test_name, accuracy):
     plt.figure(figsize=(8, 6))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=encoder.classes_, yticklabels=encoder.classes_)
     plt.title('Confusion Matrix')
     plt.ylabel('Actual')
     plt.xlabel('Predicted')
-    plt.show()
+    plt.savefig(f"{GRAPH_PATH}/{test_name}/confusion_matrix.png")
+    
+    # Create graph directory if it doesn't exist
+    if not os.path.exists(f"{GRAPH_PATH}/{test_name}"):
+        os.makedirs(f"{GRAPH_PATH}/{test_name}")
+    
+    # Save accuracy to text file
+    with open(f"{GRAPH_PATH}/{test_name}/testing.txt", "w") as f:
+        f.write(f"Test Accuracy: {accuracy * 100:.2f}%\n")
 
 
 # Save the model and encoder
-def save_model(model, encoder):
-    model.save(MODEL_PATH)
+def save_model(model, encoder, test_name="test") -> None:
+
+    # Create save directory if it doesn't exist
+    if not os.path.exists(f"{SAVE_PATH}/{test_name}"):
+        os.makedirs(f"{SAVE_PATH}/{test_name}")
     
-    with open(ENCODER_PATH, "wb") as f:
+    model.save(f"{SAVE_PATH}/{test_name}/speech_model.keras") # type: ignore
+    
+    with open(f"{SAVE_PATH}/{test_name}/label_encoder.pkl", "wb") as f:
         pickle.dump(encoder, f)
 
 
 # Load the model and encoder
-def load_model() -> tf.keras.Model: # type: ignore
-    model = tf.keras.models.load_model(MODEL_PATH) # type: ignore
-    with open(ENCODER_PATH, "rb") as f:
+def load_model(test_name="test") -> tf.keras.Model: # type: ignore
+    model = tf.keras.models.load_model(f"{SAVE_PATH}/{test_name}/speech_model.keras") # type: ignore
+    
+    with open(f"{SAVE_PATH}/{test_name}/label_encoder.pkl", "rb") as f:
         encoder = pickle.load(f)
     return model, encoder

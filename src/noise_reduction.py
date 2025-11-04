@@ -4,9 +4,6 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
-import sounddevice as sd
-from keras.models import load_model
-import pickle
 
 
 NOISE_PATH = "data/noise/"
@@ -23,7 +20,7 @@ def load_all_noises() -> np.ndarray:
 
 
 def load_noise(path, target_len):
-    noise, sr = sf.read(path)
+    noise, _ = sf.read(path)
 
     # Convert stereo → mono
     if len(noise.shape) > 1:
@@ -39,6 +36,7 @@ def load_noise(path, target_len):
     # If longer → trim to exact size
     return noise[:target_len]
 
+
 def preprocess_noise(noise: np.ndarray, target_len: int) -> np.ndarray:
     noise = noise.flatten()
     # Loop/trim to match length
@@ -46,6 +44,7 @@ def preprocess_noise(noise: np.ndarray, target_len: int) -> np.ndarray:
         repeat = int(np.ceil(target_len / len(noise)))
         noise = np.tile(noise, repeat)
     return noise[:target_len]
+
 
 def show_spectrogram(audio, fs, title):
     f, t, Sxx = signal.spectrogram(audio, fs)
@@ -55,6 +54,7 @@ def show_spectrogram(audio, fs, title):
     plt.title(title)
     plt.tight_layout()
     plt.show()
+
 
 def add_noise(signal, noise, snr_db):
     # Compute signal power
@@ -124,6 +124,7 @@ def spectral_subtraction(
     cleaned = cleaned / (window_sum + 1e-10)
 
     return cleaned.astype(np.float32)
+
 
 def apply_noise_to_signals(signals: list[np.ndarray], labels: np.ndarray, snr_amounts: list = SNR_AMOUNTS) -> tuple[list[np.ndarray], list[str]]:
     noises = load_all_noises()
