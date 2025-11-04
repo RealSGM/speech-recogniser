@@ -18,14 +18,7 @@ def spectral_features(magnitude: np.ndarray, fs: int) -> np.ndarray:
     spread = np.sqrt(np.sum(((freqs - centroid) ** 2) * mag))
     flatness = np.exp(np.mean(np.log(mag + 1e-10))) / (np.mean(mag) + 1e-10)
     
-    # Additional features
-    cumsum_mag = np.cumsum(mag)
-    rolloff = freqs[np.searchsorted(cumsum_mag, 0.85)]  # 85% roll-off
-    skewness = np.sum(((freqs - centroid) ** 3) * mag) / (spread**3 + 1e-10)
-    kurtosis = np.sum(((freqs - centroid) ** 4) * mag) / (spread**4 + 1e-10)
-    slope = (mag[-1] - mag[0]) / (freqs[-1] - freqs[0] + 1e-10)
-    
-    return np.array([centroid, spread, flatness, rolloff, skewness, kurtosis, slope])
+    return np.array([centroid, spread, flatness])
 
 
 ## Ensure all MFCC feature arrays have the same length by padding with zeros
@@ -140,7 +133,7 @@ def mel_triangular_filterbank(magspec: np.ndarray, num_channels: int, fs: int) -
 def mfcc(speechFrame: np.ndarray, fs: int, num_mel_filters: int, num_ceps: int) -> np.ndarray:
     magnitude, _ = mag_and_phase(speechFrame)
     frame_energy = np.log(np.sum(magnitude ** 2) + MIN_INT)
-    mel_fbank = mel_triangular_filterbank(magnitude, num_mel_filters, fs)
+    mel_fbank = linear_rectangular_filterbank(magnitude, num_mel_filters)
     log_mel_fbank = np.log(mel_fbank + MIN_INT)
     mfcc = dct(log_mel_fbank, type=2, norm='ortho')[:num_ceps]
     
@@ -232,7 +225,3 @@ def get_mfcc_dataset(path: str, file_path: str, include_noisy: bool = False) -> 
     padded = np.expand_dims(padded, -1)  # Add channel dimension
 
     return padded, np.array(labels)
-
-
-if __name__ == "__main__":
-    create_mfcc_dataset(file_reader.TRAINING_DIRECTORY, file_reader.TRAINING_DIRECTORY)

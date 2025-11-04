@@ -22,8 +22,6 @@ if __name__ == "__main__":
     
     accuracy = metrics.accuracy_score(actual_indices, prediction_indices)
     
-    print(f"\n Test Accuracy: {accuracy * 100:.2f}%")
-
     print("\n Classification Report:\n")
     print(
         metrics.classification_report(
@@ -34,6 +32,7 @@ if __name__ == "__main__":
             zero_division=0
         )
     )
+    print(f"\n Test Accuracy: {accuracy * 100:.2f}%")
     
     # print confusion matrix
     cm = metrics.confusion_matrix(actual_indices, prediction_indices)

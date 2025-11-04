@@ -13,8 +13,9 @@ from keras.optimizers import Adam
 
 
 SAVE_PATH = "data/networks"
-MODEL_PATH = f"{SAVE_PATH}/speech_model.keras"
-ENCODER_PATH = f"{SAVE_PATH}/label_encoder.pkl"
+TRAINED_MODEL_NAME = "spectral_"
+MODEL_PATH = f"{SAVE_PATH}/{TRAINED_MODEL_NAME}speech_model.keras"
+ENCODER_PATH = f"{SAVE_PATH}/{TRAINED_MODEL_NAME}label_encoder.pkl"
 
 
 def encode_labels(labels, class_list):
@@ -24,7 +25,14 @@ def encode_labels(labels, class_list):
     return encoded, encoder
 
 
-def create_model(input_shape, num_classes):
+def create_simplemodel(input_shape, num_classes):
+    model = get_simple_model(input_shape, num_classes)
+    adam = Adam(learning_rate=0.0005)
+    model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=adam) # type: ignore
+    return model
+
+
+def get_simple_model(input_shape: tuple, num_classes: int) -> tf.keras.Model: # type: ignore
     model = Sequential()
     model.add(InputLayer(shape=input_shape))
     model.add(Conv2D(64, (3, 3), activation='relu'))
@@ -37,11 +45,23 @@ def create_model(input_shape, num_classes):
     model.add(Dense(256, activation='relu'))
     model.add(BatchNormalization()) 
     model.add(Dense(num_classes, activation='softmax'))
-
-    adam = Adam(learning_rate=0.0005)
-    model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=adam) # type: ignore
     return model
 
+
+def get_complex_model(input_shape: tuple, num_classes: int) -> tf.keras.Model: # type: ignore
+    model = Sequential()
+    model.add(InputLayer(shape=input_shape))
+    model.add(Conv2D(64, (3, 3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(3, 3)))
+    model.add(Conv2D(128, (3, 3), activation='relu'))
+    model.add(Conv2D(64, (3, 3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(3, 3)))
+    model.add(Flatten())
+    model.add(Dropout(0.5))
+    model.add(Dense(256, activation='relu'))
+    model.add(BatchNormalization()) 
+    model.add(Dense(num_classes, activation='softmax'))
+    return model
 
 def train_model(model, X_train, y_train, X_val, y_val, epochs=25, batch_size=32):
     # Stop early if no improvement
@@ -120,14 +140,6 @@ def plot_training_history(history):
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='upper left')
     
-    # Plot heatmap of confusion matrix
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=encoder.classes_, yticklabels=encoder.classes_)
-    plt.title('Confusion Matrix')
-    plt.ylabel('Actual')
-    plt.xlabel('Predicted')
-    
-
     plt.show()
 
 
