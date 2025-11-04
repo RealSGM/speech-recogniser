@@ -6,7 +6,7 @@ import numpy as np
 import pickle
 from keras.models import load_model
 from feature_extractor import preprocess_signal, get_mfcc_signal, compute_deltas
-from noise_reduction import load_noise, add_noise, spectral_subtraction
+from noise_reduction import load_noise, add_noise, spectral_subtraction, show_spectrogram
 
 
 def pad_to_model_length(features, target_len):
@@ -66,21 +66,22 @@ def live_record(fs=16000, duration=2.0):
 
 if __name__ == "__main__":
 
-    name = "hannah"
-    while True:
-        #name = input("Name: ")
-        audio, fs = live_record()
-        #audio, fs = sf.read("data/testing_recordings/"+name+"/"+name+"_009.wav")
-        audio = audio.flatten()
+    name = "mateusz"
 
-        # === Load babble noise ===
-        noise = load_noise("data/noise/noise.wav", len(audio))
-        noisy_audio = add_noise(audio, noise, snr_db=0)
-        #cleaned_audio = spectral_subtraction(noisy_audio,fs)
-        sd.play(noisy_audio,fs)
-        sd.wait()
-        model = load_model("data/networks/speech_model.keras")
-        # Load label encoder
-        with open("data/networks/label_encoder.pkl", "rb") as f:
-            encoder = pickle.load(f)
-        predict(noisy_audio,model,encoder)
+    #name = input("Name: ")
+    #audio, fs = live_record()
+    audio, fs = sf.read("data/testing_recordings/"+name+"/"+name+"_009.wav")
+    audio = audio.flatten()
+
+    # === Load babble noise ===
+    noise = load_noise("data/noise/babble.wav", len(audio))
+    noisy_audio = add_noise(audio, noise, snr_db=0)
+    #cleaned_audio = spectral_subtraction(noisy_audio,fs)
+    show_spectrogram(noisy_audio,fs,"Mateusz Test File with 'babble' noise")
+    sd.play(noisy_audio,fs)
+    sd.wait()
+    #model = load_model("data/networks/speech_model.keras")
+    # Load label encoder
+    # with open("data/networks/label_encoder.pkl", "rb") as f:
+    #     encoder = pickle.load(f)
+    # predict(noisy_audio,model,encoder)

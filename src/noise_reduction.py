@@ -21,15 +21,22 @@ def load_all_noises() -> np.ndarray:
         noises.append(sf.read(noise_path)[0])
     return np.array(noises)
 
+
 def load_noise(path, target_len):
     noise, sr = sf.read(path)
-    noise = noise.flatten()
 
-    # Repeat to match target length
+    # Convert stereo → mono
+    if len(noise.shape) > 1:
+        noise = np.mean(noise, axis=1)
+
+    noise = noise.astype(np.float32)
+
+    # If shorter → repeat until long enough
     if len(noise) < target_len:
         repeat = int(np.ceil(target_len / len(noise)))
         noise = np.tile(noise, repeat)
 
+    # If longer → trim to exact size
     return noise[:target_len]
 
 def preprocess_noise(noise: np.ndarray, target_len: int) -> np.ndarray:
@@ -47,6 +54,7 @@ def show_spectrogram(audio, fs, title):
     plt.xlabel("Time (s)")
     plt.title(title)
     plt.tight_layout()
+    plt.show()
 
 def add_noise(signal, noise, snr_db):
     # Compute signal power
