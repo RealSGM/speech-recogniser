@@ -30,3 +30,4 @@ if __name__ == "__main__":
     history = am.train_model(model, X_train, y_train, X_val, y_val, epochs=25, batch_size=32)
     am.evaluate_model(model, X_test, y_test, encoder)
     am.save_model(model, encoder)
+    am.plot_training_history(history)

@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import pickle
+import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder
 from sklearn import metrics
 from keras.utils import to_categorical
@@ -97,6 +98,28 @@ def predict_sample(model, X_sample, encoder):
     print(f'Predicted class: {predicted_class[0]}')
     return predicted_class[0]
 
+
+def plot_training_history(history):
+    # Plot training & validation accuracy values
+    plt.figure(figsize=(12, 4))
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['accuracy'])
+    plt.plot(history.history['val_accuracy'])
+    plt.title('Model accuracy')
+    plt.ylabel('Accuracy')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Validation'], loc='upper left')
+
+    # Plot training & validation loss values
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('Model loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Validation'], loc='upper left')
+
+    plt.show()
 
 # Save the model and encoder
 def save_model(model, encoder):
