@@ -4,6 +4,7 @@ load_dotenv()
 import file_reader as fr
 import feature_extractor as fe
 import acoustic_modeller as am
+import numpy as np
 from sklearn import metrics
 
 

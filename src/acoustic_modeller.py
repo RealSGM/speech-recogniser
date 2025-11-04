@@ -37,7 +37,7 @@ def create_model(input_shape, num_classes):
     model.add(Dense(num_classes, activation='softmax'))
 
     adam = Adam(learning_rate=0.0005)
-    model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=adam)
+    model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=adam) # type: ignore
     return model
 
 
@@ -107,8 +107,8 @@ def save_model(model, encoder):
 
 
 # Load the model and encoder
-def load_model() -> tf.keras.Model:
-    model = tf.keras.models.load_model(MODEL_PATH)
+def load_model() -> tf.keras.Model: # type: ignore
+    model = tf.keras.models.load_model(MODEL_PATH) # type: ignore
     with open(ENCODER_PATH, "rb") as f:
         encoder = pickle.load(f)
     return model, encoder

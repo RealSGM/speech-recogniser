@@ -1,6 +1,7 @@
 import os
 import soundfile as sf
 import numpy as np
+import noise_reduction as nr
 
 TRAINING_DIRECTORY = "data/training_recordings"
 TESTING_DIRECTORY = "data/testing_recordings"
@@ -11,9 +12,9 @@ def read_audiofile(file_path: str) -> tuple[np.ndarray, int]:
     return data, samplerate
 
 
-def load_dataset(path: str) -> tuple[list[np.ndarray], list[str]]:
-    print("- Loading dataset...")
-    audio_data, labels = [], []
+def load_dataset(path: str, include_noisy: bool = False) -> tuple[list[np.ndarray], list[str]]:
+    audio_data = []
+    labels = []
     
     for label in os.listdir(path):
         folder = os.path.join(path, label)
@@ -31,5 +32,7 @@ def load_dataset(path: str) -> tuple[list[np.ndarray], list[str]]:
             audio_data.append(data)
             labels.append(label)
     
-    print("- Dataset loaded")
+    if include_noisy:
+        audio_data, labels = nr.apply_noise_to_signals(audio_data, np.array(labels))
+    
     return audio_data, labels

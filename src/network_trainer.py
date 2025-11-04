@@ -8,7 +8,8 @@ from sklearn.model_selection import train_test_split
 
 
 if __name__ == "__main__":
-    data, labels = fe.get_mfcc_dataset(fe.TRAINING_PATH, fr.TRAINING_DIRECTORY)
+    data, labels = fe.get_mfcc_dataset(fe.TRAINING_PATH, fr.TRAINING_DIRECTORY, include_noisy=True)
+    
     encoded_labels, encoder = am.encode_labels(labels, sorted(set(labels)))
     
     X_train, X_tmp, y_train, y_tmp = train_test_split(
@@ -25,7 +26,7 @@ if __name__ == "__main__":
         stratify=y_tmp
     )
     
-    model = am.create_model(input_shape=data.shape[1:], num_classes=len(encoder.classes_))
+    model = am.create_model(input_shape=data.shape[1:], num_classes=len(encoder.classes_)) # type: ignore
     history = am.train_model(model, X_train, y_train, X_val, y_val, epochs=25, batch_size=32)
     am.evaluate_model(model, X_test, y_test, encoder)
     am.save_model(model, encoder)

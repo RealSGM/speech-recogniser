@@ -190,8 +190,8 @@ def save_mfcc(label: str, mfcc_features: np.ndarray, index: int, path: str) -> N
     np.save(f"{label_dir}/mfcc_{index:03d}.npy", mfcc_features)
 
 
-def create_mfcc_dataset(path: str, file_path) -> None:
-    audio_data, labels = file_reader.load_dataset(file_path)
+def create_mfcc_dataset(path: str, file_path: str, include_noisy: bool = False) -> None:
+    audio_data, labels = file_reader.load_dataset(file_path, include_noisy=include_noisy)
     print("Number of audio files loaded:", len(audio_data))
     
     for i in range(len(audio_data)):
@@ -209,9 +209,9 @@ def create_mfcc_dataset(path: str, file_path) -> None:
 
 
 ## Load MFCC dataset from disk, creating it if necessary
-def get_mfcc_dataset(path: str, file_path: str) -> tuple[np.ndarray, np.ndarray]:
+def get_mfcc_dataset(path: str, file_path: str, include_noisy: bool = False) -> tuple[np.ndarray, np.ndarray]:
     if os.listdir(path) == []:
-        create_mfcc_dataset(path, file_path)
+        create_mfcc_dataset(path, file_path, include_noisy)
 
     data = []
     labels = []
