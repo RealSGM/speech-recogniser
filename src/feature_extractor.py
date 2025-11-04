@@ -51,10 +51,6 @@ def compute_deltas(mfcc_features: np.ndarray, N: int = 2) -> np.ndarray:
     return deltas
 
 
-def pre_emphasise(signal: np.ndarray, coeff: float = 0.97) -> np.ndarray:
-    return np.append(signal[0], signal[1:] - coeff * signal[:-1])
-
-
 ## Preprocess the signal by applying pre-emphasis and normalisation
 def preprocess_signal(signal: np.ndarray, coeff: float = 0.97) -> np.ndarray:
     emphasised_signal = np.append(signal[0], signal[1:] - coeff * signal[:-1])
@@ -148,8 +144,8 @@ def mfcc(speechFrame: np.ndarray, fs: int, num_mel_filters: int, num_ceps: int) 
     log_mel_fbank = np.log(mel_fbank + MIN_INT)
     mfcc = dct(log_mel_fbank, type=2, norm='ortho')[:num_ceps]
     
+    ## Not Implemented
     spec_stats = spectral_features(magnitude, fs)
-    
     spec_stats[0] /= (fs / 2)  # centroid
     spec_stats[1] /= (fs / 2)  # spread
     spec_stats[2] = np.clip(spec_stats[2], 0, 1)  # flatness
