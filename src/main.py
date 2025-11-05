@@ -11,55 +11,48 @@ from sklearn.model_selection import train_test_split
 delete_mfccs_on_startup = True
 
 test_configurations = [
+    # {
+    #     "test_name": "baseline",
+    #     "use_complex_model": False,
+    #     "use_mel_filter_bank": False,
+    #     "use_spectral_features": False,
+    #     "include_noisy_data": False
+    # },
+    # {
+    #     "test_name": "complex_model",
+    #     "use_complex_model": True,
+    #     "use_mel_filter_bank": False,
+    #     "use_spectral_features": False,
+    #     "include_noisy_data": False
+    # },
+    # {
+    #     "test_name": "mel_filter_bank",
+    #     "use_complex_model": False,
+    #     "use_mel_filter_bank": True,
+    #     "use_spectral_features": False,
+    #     "include_noisy_data": False
+    # },
+    # {
+    #     "test_name": "spectral_features",
+    #     "use_complex_model": False,
+    #     "use_mel_filter_bank": False,
+    #     "use_spectral_features": True,
+    #     "include_noisy_data": False
+    # },
+    # {
+    #     "test_name": "noisy_data",
+    #     "use_complex_model": False,
+    #     "use_mel_filter_bank": False,
+    #     "use_spectral_features": False,
+    #     "include_noisy_data": True
+    # },
     {
-        "test_name": "baseline",
-        "use_complex_model": False,
-        "use_mel_filter_bank": False,
-        "use_spectral_features": False,
-        "include_noisy_data": False
-    },
-    {
-        "test_name": "complex_model",
+        "test_name": "all_features_noisy_testing",
         "use_complex_model": True,
-        "use_mel_filter_bank": False,
-        "use_spectral_features": False,
-        "include_noisy_data": False
-    },
-    {
-        "test_name": "mel_filter_bank",
-        "use_complex_model": False,
         "use_mel_filter_bank": True,
-        "use_spectral_features": False,
-        "include_noisy_data": False
-    },
-    {
-        "test_name": "spectral_features",
-        "use_complex_model": False,
-        "use_mel_filter_bank": False,
         "use_spectral_features": True,
-        "include_noisy_data": False
-    },
-    {
-        "test_name": "noisy_data",
-        "use_complex_model": False,
-        "use_mel_filter_bank": False,
-        "use_spectral_features": False,
         "include_noisy_data": True
     },
-    {
-        "test_name": "all_features",
-        "use_complex_model": True,
-        "use_mel_filter_bank": True,
-        "use_spectral_features": True,
-        "include_noisy_data": True
-    },
-    {
-        "test_name": "complex_mel_noisy",
-        "use_complex_model": True,
-        "use_mel_filter_bank": True,
-        "use_spectral_features": False,
-        "include_noisy_data": True
-    }
 ]
 
 
@@ -76,7 +69,7 @@ def test_network(testing_name: str, use_mel_filter_bank: bool, use_spectral_feat
     print(f"\n=== Testing network: {testing_name} ===")
     
     model, encoder = am.load_model(testing_name)
-    data, labels = fe.get_mfcc_dataset(fe.TESTING_PATH, fr.TESTING_DIRECTORY, include_noisy=False, use_spectral_features=use_spectral_features, use_mel_filter_bank=use_mel_filter_bank)
+    data, labels = fe.get_mfcc_dataset(fe.TESTING_PATH, fr.TESTING_DIRECTORY, include_noisy=True, use_spectral_features=use_spectral_features, use_mel_filter_bank=use_mel_filter_bank)
     encoded_labels, _ = am.encode_labels(labels, sorted(set(labels)))
     
     # Loop through all data and evaluate
@@ -123,12 +116,12 @@ def train_network(test_name: str, use_complex_model: bool, use_mel_filter_bank: 
 
 if __name__ == "__main__":
     for config in test_configurations:
-        delete_mfcc_files()
+        # delete_mfcc_files()
         test_name = config['test_name']
         use_complex_model = config['use_complex_model']
         use_mel_filter_bank = config['use_mel_filter_bank']
         use_spectral_features = config['use_spectral_features']
         include_noisy_data = config['include_noisy_data']
         
-        train_network(test_name, use_complex_model, use_mel_filter_bank, use_spectral_features, include_noisy_data)
+        # train_network(test_name, use_complex_model, use_mel_filter_bank, use_spectral_features, include_noisy_data)
         test_network(test_name, use_mel_filter_bank, use_spectral_features)
