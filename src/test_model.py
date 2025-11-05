@@ -35,7 +35,7 @@ def predict(audio, model, encoder, fs=16000, top_n=3, print_results=True):
         frame_stride=0.01,
         num_mel_filters=40,
         num_ceps=26,
-        use_spectral_features=True,
+        use_spectral_features=False,
         use_mel_filter_bank=True
     )
 
@@ -139,18 +139,21 @@ def evaluate_predictions(paths, predictions, print_results=True):
     }
 
 if __name__ == "__main__":
-    paths = get_file_paths()
-    results = predict_files(paths)
-    evaluate_predictions(paths, results)
+    # paths = get_file_paths()
+    # results = predict_files(paths)
+    # evaluate_predictions(paths, results)
 
-    # audio, sr = sf.read("data/testing_recordings/mateusz/mateusz_003.wav")
-    # audio = audio.flatten()
-    # fs = 16000
+    model_path = "data/networks/complex_mel_noisy/speech_model.keras"
+    encoder_path = "data/networks/complex_mel_noisy/label_encoder.pkl"
+    fs = 16000
 
-    # noise = load_noise("data/noise/babble.wav", len(audio))
-    # noisy_audio = add_noise(audio, noise, snr_db=10)
-    # cleaned_audio = spectral_subtraction(noisy_audio,fs)
-    # show_spectrogram(cleaned_audio, fs,"Mateusz Test File with cleaned babble noise")
-    # sd.play(cleaned_audio,fs)
-    # sd.wait()
-
+    model = load_model(model_path)
+    with open(encoder_path, "rb") as f:
+        encoder = pickle.load(f)
+    try:
+        while True:
+            audio, sr = live_record(fs=fs, duration=2.0)
+            prediction = predict(audio, model, encoder, fs=fs, top_n=3, print_results=True)
+            print(f"Top prediction: {prediction}\n")
+    except KeyboardInterrupt:
+        print("\nExiting live prediction.")
