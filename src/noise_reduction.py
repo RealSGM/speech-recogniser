@@ -7,7 +7,7 @@ from scipy import signal
 
 
 NOISE_PATH = "data/noise/"
-SNR_AMOUNTS = [0, 10, 20]
+SNR_AMOUNTS = [20]
 
 
 def load_all_noises() -> list[np.ndarray]:
@@ -71,46 +71,26 @@ def add_noise(signal, noise, snr_db):
     # Add noise
     return signal + noise
 
-
-def spectral_subtraction(
-        signal, 
-        fs=16000, 
-        frame_size=0.025, 
-        frame_stride=0.01,
-        noise_frames=6,
-        alpha=6.0,
-        beta=0.001  # noise floor factor
-    ):
-    
+def spectral_subtraction(signal, fs=16000, frame_size=0.025, frame_stride=0.01,noise_frames=6,alpha=4.0,beta=0.01):
     frame_len = int(frame_size * fs)
     frame_step = int(frame_stride * fs)
     window = np.hamming(frame_len)
 
-    # Frame the signal
     frames = []
     for i in range(0, len(signal) - frame_len, frame_step):
         frames.append(signal[i:i+frame_len] * window)
     frames = np.array(frames)
 
-    # FFT
     spectra = np.fft.rfft(frames, axis=1)
     magnitudes = np.abs(spectra)
     phases = np.angle(spectra)
-
-    # Noise magnitude estimate
     noise_mag = np.mean(magnitudes[:noise_frames], axis=0)
 
-    # Spectral subtraction
     clean_mag = magnitudes - alpha * noise_mag
-    clean_mag = np.maximum(clean_mag, beta * noise_mag)   # ✅ noise floor instead of 0
-
-    # Reconstruct spectrum
+    clean_mag = np.maximum(clean_mag, beta * noise_mag)
     clean_spec = clean_mag * np.exp(1j * phases)
-
-    # iFFT
     clean_frames = np.fft.irfft(clean_spec, axis=1)
 
-    # Overlap-add (with normalization)
     output_len = (len(clean_frames)-1) * frame_step + frame_len
     cleaned = np.zeros(output_len)
     window_sum = np.zeros(output_len)
@@ -120,11 +100,8 @@ def spectral_subtraction(
         cleaned[start:start+frame_len] += clean_frames[i] * window
         window_sum[start:start+frame_len] += window**2
 
-    # Avoid divide-by-zero
-    cleaned = cleaned / (window_sum + 1e-10)
-
+    cleaned /= (window_sum + 1e-10)
     return cleaned.astype(np.float32)
-
 
 def apply_noise_to_signals(signals: list[np.ndarray], labels: np.ndarray, snr_amounts: list = SNR_AMOUNTS) -> tuple[list[np.ndarray], list[str]]:
     noises = load_all_noises()
