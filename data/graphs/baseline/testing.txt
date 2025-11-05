@@ -1,1 +1,1 @@
-Test Accuracy: 61.81%
+Test Accuracy: 66.83%

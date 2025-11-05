@@ -186,6 +186,7 @@ def save_mfcc(label: str, mfcc_features: np.ndarray, index: int, path: str) -> N
 
 
 def create_mfcc_dataset(path: str, file_path: str, include_noisy: bool, use_spectral_features: bool, use_mel_filter_bank: bool) -> None:
+    print("Creating MFCC dataset...")
     audio_data, labels = file_reader.load_dataset(file_path, include_noisy=include_noisy)
     print("Number of audio files loaded:", len(audio_data))
     
@@ -193,14 +194,13 @@ def create_mfcc_dataset(path: str, file_path: str, include_noisy: bool, use_spec
         label = labels[i]
         
         signal = preprocess_signal(audio_data[i])
-        mfcc = get_mfcc_signal(signal, fs=16000, frame_size=0.025, frame_stride=0.01, num_mel_filters=40, num_ceps=26, use_spectral_features=use_spectral_features, use_mel_filter_bank=use_mel_filter_bank)
+        mfcc = get_mfcc_signal(signal, fs=16000, frame_size=0.025, frame_stride=0.01, num_mel_filters=40, num_ceps=13, use_spectral_features=use_spectral_features, use_mel_filter_bank=use_mel_filter_bank)
         mfcc = (mfcc - np.mean(mfcc)) / np.std(mfcc)  # Normalise MFCC
         delta = compute_deltas(mfcc)
         delta_delta = compute_deltas(delta)
         final = np.concatenate((mfcc, delta, delta_delta), axis=1)
-        print(f"MFCC shape for sample {i}: {final.shape} of label '{label}'")
-        
         save_mfcc(label, final, i, path)
+    print("MFCC dataset created.")
 
 
 ## Load MFCC dataset from disk, creating it if necessary

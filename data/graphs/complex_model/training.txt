@@ -1,2 +1,2 @@
-Elapsed Time: 87.93 seconds
-Test Accuracy: 93.75%
+Elapsed Time: 25.07 seconds
+Test Accuracy: 96.25%
