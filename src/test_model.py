@@ -34,8 +34,8 @@ def predict(audio, model, encoder, fs=16000, top_n=3, print_results=True):
         frame_size=0.025,
         frame_stride=0.01,
         num_mel_filters=40,
-        num_ceps=26,
-        use_spectral_features=False,
+        num_ceps=13,
+        use_spectral_features=True,
         use_mel_filter_bank=True
     )
 
@@ -139,12 +139,18 @@ def evaluate_predictions(paths, predictions, print_results=True):
     }
 
 if __name__ == "__main__":
+
+    ## FILE RECOGNISER
+
     # paths = get_file_paths()
     # results = predict_files(paths)
     # evaluate_predictions(paths, results)
 
-    model_path = "data/networks/complex_mel_noisy/speech_model.keras"
-    encoder_path = "data/networks/complex_mel_noisy/label_encoder.pkl"
+
+    ## LIVE DEMO
+
+    model_path = "data/networks/all_features/speech_model.keras"
+    encoder_path = "data/networks/all_features/label_encoder.pkl"
     fs = 16000
 
     model = load_model(model_path)
