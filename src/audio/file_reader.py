@@ -1,7 +1,7 @@
 import os
 import soundfile as sf
 import numpy as np
-import noise_reduction as nr
+import audio.noise_reduction as nr
 
 TRAINING_DIRECTORY = "data/training_recordings"
 TESTING_DIRECTORY = "data/testing_recordings"

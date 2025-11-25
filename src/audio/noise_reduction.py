@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from scipy import signal
 
 
-NOISE_PATH = "data/noise/"
+NOISE_PATH = "data/audio/noise/"
 SNR_AMOUNTS = [20]
 
 

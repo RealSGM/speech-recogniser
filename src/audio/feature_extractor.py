@@ -1,10 +1,10 @@
 import numpy as np
 import os
-import file_reader
+import audio.file_reader as file_reader
 from scipy.fftpack import dct
 
-TRAINING_PATH = "data/training_mfccs"
-TESTING_PATH = "data/testing_mfccs"
+TRAINING_PATH = "data/audio/training_mfccs"
+TESTING_PATH = "data/audio/testing_mfccs"
 MIN_INT = 1e-10
 
 

@@ -1,9 +1,9 @@
 import time
 import os
 import shutil
-import file_reader as fr
-import feature_extractor as fe
-import acoustic_modeller as am
+import audio.file_reader as fr
+import audio.feature_extractor as fe
+import audio.acoustic_modeller as am
 import numpy as np
 from sklearn import metrics
 from sklearn.model_selection import train_test_split
@@ -112,7 +112,7 @@ def train_network(test_name: str, use_complex_model: bool, use_mel_filter_bank: 
     
     am.save_model(model, encoder, test_name)
     am.plot_training_history(history, test_name)
-
+    
 
 if __name__ == "__main__":
     for config in test_configurations:

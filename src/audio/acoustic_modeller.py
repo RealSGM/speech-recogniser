@@ -12,8 +12,8 @@ from keras.layers import Dense, Activation, Flatten, Conv2D, InputLayer, MaxPool
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras.optimizers import Adam
 
-SAVE_PATH = "data/networks"
-GRAPH_PATH = "data/graphs"
+SAVE_PATH = "data/audio/networks"
+GRAPH_PATH = "data/audio/graphs"
 
 
 def encode_labels(labels, class_list):
@@ -94,20 +94,6 @@ def evaluate_model(model, X_test, y_test, encoder, test_name: str = "", elapsed_
     actual = np.argmax(y_test, axis=1)
 
     accuracy = metrics.accuracy_score(actual, predicted)
-
-    # cm = metrics.confusion_matrix(actual, predicted)
-    # print("\nClassification Report:\n")
-    # print(
-    #     metrics.classification_report(
-    #         actual, 
-    #         predicted, 
-    #         labels=range(len(encoder.classes_)),
-    #         target_names=encoder.classes_,
-    #         zero_division=0
-    #     )
-    # )
-    
-    # Save elapsed time and accuracy to file
     
     # Create graph directory if it doesn't exist
     if not os.path.exists(f"{GRAPH_PATH}/{test_name}"):
@@ -159,11 +145,12 @@ def plot_confusion_matrix(cm, encoder, test_name, accuracy):
     plt.title('Confusion Matrix')
     plt.ylabel('Actual')
     plt.xlabel('Predicted')
-    plt.savefig(f"{GRAPH_PATH}/{test_name}/confusion_matrix.png")
     
     # Create graph directory if it doesn't exist
     if not os.path.exists(f"{GRAPH_PATH}/{test_name}"):
         os.makedirs(f"{GRAPH_PATH}/{test_name}")
+    
+    plt.savefig(f"{GRAPH_PATH}/{test_name}/confusion_matrix.png")
     
     # Save accuracy to text file
     with open(f"{GRAPH_PATH}/{test_name}/testing.txt", "w") as f:
@@ -172,7 +159,6 @@ def plot_confusion_matrix(cm, encoder, test_name, accuracy):
 
 # Save the model and encoder
 def save_model(model, encoder, test_name="test") -> None:
-
     # Create save directory if it doesn't exist
     if not os.path.exists(f"{SAVE_PATH}/{test_name}"):
         os.makedirs(f"{SAVE_PATH}/{test_name}")
