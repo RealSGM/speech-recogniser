@@ -69,7 +69,7 @@ def test_network(testing_name: str, use_mel_filter_bank: bool, use_spectral_feat
     print(f"\n=== Testing network: {testing_name} ===")
     
     model, encoder = am.load_model(testing_name)
-    data, labels = fe.get_mfcc_dataset(fe.TESTING_PATH, fr.TESTING_DIRECTORY, include_noisy=True, use_spectral_features=use_spectral_features, use_mel_filter_bank=use_mel_filter_bank)
+    data, labels = fe.get_mfcc_dataset(fe.TESTING_PATH, fr.TESTING_PATH, include_noisy=True, use_spectral_features=use_spectral_features, use_mel_filter_bank=use_mel_filter_bank)
     encoded_labels, _ = am.encode_labels(labels, sorted(set(labels)))
     
     # Loop through all data and evaluate
@@ -86,7 +86,7 @@ def test_network(testing_name: str, use_mel_filter_bank: bool, use_spectral_feat
 def train_network(test_name: str, use_complex_model: bool, use_mel_filter_bank: bool, use_spectral_features: bool, include_noisy_data: bool):
     print(f"\n=== Training network: {test_name} ===")
     
-    data, labels = fe.get_mfcc_dataset(fe.TRAINING_PATH, fr.TRAINING_DIRECTORY, include_noisy=include_noisy_data, use_spectral_features=use_spectral_features, use_mel_filter_bank=use_mel_filter_bank)
+    data, labels = fe.get_mfcc_dataset(fe.TRAINING_PATH, fr.TRAINING_PATH, include_noisy=include_noisy_data, use_spectral_features=use_spectral_features, use_mel_filter_bank=use_mel_filter_bank)
     encoded_labels, encoder = am.encode_labels(labels, sorted(set(labels)))
     
     X_train, X_tmp, y_train, y_tmp = train_test_split(
