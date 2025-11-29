@@ -4,7 +4,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
-
+import librosa
 
 NOISE_PATH = "data/audio/noise/"
 SNR_AMOUNTS = [20]
@@ -71,37 +71,32 @@ def add_noise(signal, noise, snr_db):
     # Add noise
     return signal + noise
 
-def spectral_subtraction(signal, fs=16000, frame_size=0.025, frame_stride=0.01,noise_frames=6,alpha=4.0,beta=0.01):
-    frame_len = int(frame_size * fs)
-    frame_step = int(frame_stride * fs)
-    window = np.hamming(frame_len)
+def spectral_subtraction(signal, fs=16000, frame_size=0.025, frame_stride=0.01,
+		noise_frames=6, alpha=4.0, beta=0.01):
 
-    frames = []
-    for i in range(0, len(signal) - frame_len, frame_step):
-        frames.append(signal[i:i+frame_len] * window)
-    frames = np.array(frames)
+	# Frame + STFT parameters
+	n_fft = int(frame_size * fs)
+	hop_length = int(frame_stride * fs)
+	window = 'hamming'
 
-    spectra = np.fft.rfft(frames, axis=1)
-    magnitudes = np.abs(spectra)
-    phases = np.angle(spectra)
-    noise_mag = np.mean(magnitudes[:noise_frames], axis=0)
+	# STFT
+	S = librosa.stft(signal, n_fft=n_fft, hop_length=hop_length, window=window)
+	mag, phase = np.abs(S), np.angle(S)
 
-    clean_mag = magnitudes - alpha * noise_mag
-    clean_mag = np.maximum(clean_mag, beta * noise_mag)
-    clean_spec = clean_mag * np.exp(1j * phases)
-    clean_frames = np.fft.irfft(clean_spec, axis=1)
+	# Noise estimate from first N frames
+	noise_mag = np.mean(mag[:, :noise_frames], axis=1, keepdims=True)
 
-    output_len = (len(clean_frames)-1) * frame_step + frame_len
-    cleaned = np.zeros(output_len)
-    window_sum = np.zeros(output_len)
+	# Spectral subtraction
+	clean_mag = mag - alpha * noise_mag
+	clean_mag = np.maximum(clean_mag, beta * noise_mag)
 
-    for i in range(len(clean_frames)):
-        start = i * frame_step
-        cleaned[start:start+frame_len] += clean_frames[i] * window
-        window_sum[start:start+frame_len] += window**2
+	# Reconstruct complex spectrum
+	clean_S = clean_mag * np.exp(1j * phase)
 
-    cleaned /= (window_sum + 1e-10)
-    return cleaned.astype(np.float32)
+	# Inverse STFT
+	cleaned = librosa.istft(clean_S, hop_length=hop_length, window=window)
+
+	return cleaned.astype(np.float32)
 
 def apply_noise_to_signals(signals: list[np.ndarray], labels: np.ndarray, snr_amounts: list = SNR_AMOUNTS) -> tuple[list[np.ndarray], list[str]]:
     noises = load_all_noises()
