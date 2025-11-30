@@ -21,7 +21,7 @@ def record_av(name: str):
 	for i in range(1, NUM_SAMPLES + 1):
 		print(f"Recording sample {i}/{NUM_SAMPLES}...")
 
-		outfile = os.path.join(name_dir, f"{name}_{i:03d}.mp4")
+		outfile = os.path.join(name_dir, f"{name}_{i+10:03d}.mp4")
 
 		cmd = [
 	"ffmpeg", "-y",
