@@ -100,7 +100,7 @@ def save_mfcc(label: str, mfcc_features: np.ndarray, index: int, path: str) -> N
 
 
 def create_dataset(audio_data, labels, use_spectral_features: bool, use_mel_filter_bank: bool, path: str) -> None:
-    print("Creating MFCC dataset...")
+	print("Creating MFCC dataset...")
 	for i, sig in enumerate(audio_data):
 		label = labels[i]
 
