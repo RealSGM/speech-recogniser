@@ -15,9 +15,9 @@ import numpy as np
 # print(cv.__version__)
 
 # models' settings. XML files are located in the same directory as the script.
-face_detector = cv.CascadeClassifier("haarcascade_frontalface_default.xml")
-eye_detector = cv.CascadeClassifier("haarcascade_eye.xml")
-mouth_detector = cv.CascadeClassifier("haarcascade_smile.xml")
+face_detector = cv.CascadeClassifier("data/detector/haarcascade_frontalface_default.xml")
+eye_detector = cv.CascadeClassifier("data/detector/haarcascade_eye.xml")
+mouth_detector = cv.CascadeClassifier("data/detector/haarcascade_smile.xml")
 
 fps = 30
 sleep = int(1000 / fps)

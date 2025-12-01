@@ -3,5 +3,6 @@ sounddevice
 matplotlib
 numpy
 scikit-learn
-keras
+keraspip
 tensorflow
+mediapipe
