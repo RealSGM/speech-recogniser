@@ -1,8 +1,67 @@
 import file_reader 
 import numpy as np
+import os
+import shutil
+
+import network.network as network
+import network.trainer as trainer
+import network.tester as tester
 
 TRAINING = "training"
 TESTING = "testing"
+VECTOR_PATH = "data/vectors"
+
+delete_vectors = True
+
+# test_configurations = [
+#     # {
+#     #     "test_name": "baseline",
+#     #     "use_complex_model": False,
+#     #     "use_mel_filter_bank": False,
+#     #     "use_spectral_features": False,
+#     #     "include_noisy_data": False
+#     # },
+#     # {
+#     #     "test_name": "complex_model",
+#     #     "use_complex_model": True,
+#     #     "use_mel_filter_bank": False,
+#     #     "use_spectral_features": False,
+#     #     "include_noisy_data": False
+#     # },
+#     # {
+#     #     "test_name": "mel_filter_bank",
+#     #     "use_complex_model": False,
+#     #     "use_mel_filter_bank": True,
+#     #     "use_spectral_features": False,
+#     #     "include_noisy_data": False
+#     # },
+#     # {
+#     #     "test_name": "spectral_features",
+#     #     "use_complex_model": False,
+#     #     "use_mel_filter_bank": False,
+#     #     "use_spectral_features": True,
+#     #     "include_noisy_data": False
+#     # },
+#     # {
+#     #     "test_name": "noisy_data",
+#     #     "use_complex_model": False,
+#     #     "use_mel_filter_bank": False,
+#     #     "use_spectral_features": False,
+#     #     "include_noisy_data": True
+#     # },
+#     {
+#         "test_name": "all_features_noisy_testing",
+#         "use_complex_model": True,
+#         "use_mel_filter_bank": True,
+#         "use_spectral_features": True,
+#         "include_noisy_data": True
+#     },
+# ]
+
+def delete_vector_files() -> None:
+    if os.path.exists(VECTOR_PATH):
+        shutil.rmtree(VECTOR_PATH)
+        print(f"Deleted existing vector files in {VECTOR_PATH}")
 
 
 def build_super_vectors(audio: np.ndarray, visual: np.ndarray) -> np.ndarray:
@@ -28,6 +87,9 @@ def build_super_vectors(audio: np.ndarray, visual: np.ndarray) -> np.ndarray:
 
 
 def main() -> None:
+    if delete_vectors:
+        delete_vector_files()
+        
     visual_data_train, audio_data_train, labels_train = file_reader.load_dataset(TRAINING)
     super_vectors_train = build_super_vectors(audio_data_train, visual_data_train)
     

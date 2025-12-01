@@ -2,3 +2,5 @@ opencv-python
 numpy
 moviepy
 librosa
+tensorflow
+seaborn
