@@ -1,0 +1,124 @@
+import os
+import numpy as np
+import cv2
+import mediapipe as mp
+
+mp_face = mp.solutions.face_mesh.FaceMesh(static_image_mode=False) # type: ignore
+
+
+LIP_IDS = [
+	61,146,91,181,84,17,314,405,321,375,
+	291,308,324,318,402,317,14,87,178,88
+]
+
+
+def extract_mouth_roi(frame):
+	rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+	result = mp_face.process(rgb)
+
+	if not result.multi_face_landmarks:
+		return None
+
+	h, w, _ = frame.shape
+
+	pts = []
+	for i in LIP_IDS:
+		lm = result.multi_face_landmarks[0].landmark[i]
+		pts.append((int(lm.x * w), int(lm.y * h)))
+
+	x, y, w, h = cv2.boundingRect(np.array(pts))
+	roi = frame[y:y+h, x:x+w]
+
+	return roi
+
+
+def extract_frame_features(frame):
+	roi = extract_mouth_roi(frame)
+
+	if roi is None or roi.size == 0:
+		return np.zeros(64)
+
+	gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+	gray = cv2.resize(gray, (96, 96))
+	gray = gray.astype(np.float32) / 255.0
+
+	dct = cv2.dct(gray)
+	coeffs = dct[:8, :8]
+
+	return coeffs.flatten()
+
+
+def compute_deltas(features, N=2):
+	padded = np.pad(features, ((N, N), (0, 0)), mode='edge')
+	deltas = []
+
+	for t in range(N, len(padded) - N):
+		num = 0
+		den = 0
+		for i in range(1, N + 1):
+			num += i * (padded[t+i] - padded[t-i])
+			den += 2 * i*i
+		deltas.append(num / den)
+
+	return np.array(deltas)
+
+
+def save_visual(label, data, index, path):
+	dir = os.path.join(path, label)
+	os.makedirs(dir, exist_ok=True)
+	np.save(f"{dir}/visual_{index:03d}.npy", data)
+
+
+def pad_visual(data):
+	max_len = max(x.shape[0] for x in data)
+	num_feat = data[0].shape[1]
+
+	padded = np.zeros((len(data), max_len, num_feat))
+	for i, seq in enumerate(data):
+		padded[i, :seq.shape[0], :] = seq
+
+	return padded
+
+
+def get_dataset(visual_path):
+	data = []
+	labels = []
+
+	for label in os.listdir(visual_path):
+		label_dir = os.path.join(visual_path, label)
+		if not os.path.isdir(label_dir):
+			continue
+
+		for f in os.listdir(label_dir):
+			if f.endswith(".npy"):
+				data.append(np.load(os.path.join(label_dir, f)))
+				labels.append(label)
+
+	if not data:
+		return np.array([]), np.array([])
+
+	padded = pad_visual(data)
+	padded = np.expand_dims(padded, -1)
+
+	return padded, np.array(labels)
+
+
+def create_dataset(video_data, labels, video_fps, path):
+	print("Creating Visual Feature Dataset...")
+
+	for i, video in enumerate(video_data):
+		label = labels[i]
+		features = []
+
+		for frame in video:
+			features.append(extract_frame_features(frame))
+
+		features = np.array(features)
+
+		delta = compute_deltas(features)
+		delta_delta = compute_deltas(delta)
+
+		final = np.concatenate((features, delta, delta_delta), axis=1)
+
+		save_visual(label, final, i, path)
+

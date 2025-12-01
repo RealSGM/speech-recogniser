@@ -3,8 +3,8 @@ import numpy as np
 import cv2
 import moviepy as mp
 
-import audio_feature_extractor as afe
-import visual_feature_extractor as vfe
+import feature_extractor.audio_extractor as afe
+import feature_extractor.visual_extractor as vfe
 
 PATH = "data/"
 RECORDINGS_PATH = "recordings/"
@@ -101,4 +101,4 @@ def load_dataset(type: str) -> tuple[np.ndarray, np.ndarray, list[str]]:
     mfcc_data, _ = afe.get_dataset(full_mfcc_path)
     visual_data, _ = vfe.get_dataset(full_visual_path)
     
-    return mfcc_data, np.array([]), labels
+    return mfcc_data, visual_data, labels

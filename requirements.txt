@@ -1,8 +1,4 @@
-soundfile
-sounddevice
-matplotlib
+opencv-python
 numpy
-scikit-learn
-keraspip
-tensorflow
-mediapipe
+moviepy
+librosa

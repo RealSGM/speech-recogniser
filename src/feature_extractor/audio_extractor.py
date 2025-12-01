@@ -18,21 +18,21 @@ def spectral_features(magnitude: np.ndarray, fs: int) -> np.ndarray:
 	return np.array([centroid, bandwidth, flatness])
 
 
-def pad_mfcc_features(data: list[np.ndarray], max_len: int, num_features: int) -> np.ndarray:
-	padded = np.zeros((len(data), max_len, num_features))
-	for i, m in enumerate(data):
-		length = m.shape[0]
-		padded[i, :length, :] = m
-	return padded
+def preprocess_signal(signal: np.ndarray, coeff: float = 0.97) -> np.ndarray:
+	emphasised = librosa.effects.preemphasis(signal, coef=coeff)
+	return emphasised - np.mean(emphasised)
 
 
 def compute_deltas(mfcc_features: np.ndarray, N: int = 2) -> np.ndarray:
 	return librosa.feature.delta(mfcc_features.T, order=1, width=2 * N + 1).T
 
 
-def preprocess_signal(signal: np.ndarray, coeff: float = 0.97) -> np.ndarray:
-	emphasised = librosa.effects.preemphasis(signal, coef=coeff)
-	return emphasised - np.mean(emphasised)
+def pad_mfcc_features(data: list[np.ndarray], max_len: int, num_features: int) -> np.ndarray:
+	padded = np.zeros((len(data), max_len, num_features))
+	for i, m in enumerate(data):
+		length = m.shape[0]
+		padded[i, :length, :] = m
+	return padded
 
 
 def mfcc(speechFrame: np.ndarray, fs: int, num_mel_filters: int, num_ceps: int,
@@ -89,7 +89,6 @@ def get_mfcc_signal(speechSignal: np.ndarray, fs: int, frame_size: float, frame_
 			mfcc(frame, fs, num_mel_filters, num_ceps, use_spectral_features, use_mel_filter_bank))
 
 	return np.array(mfcc_features)
-
 
 
 def save_mfcc(label: str, mfcc_features: np.ndarray, index: int, path: str) -> None:
