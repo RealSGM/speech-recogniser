@@ -1,8 +1,12 @@
 import network.network as network
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.model_selection import train_test_split
 from sklearn import metrics
 import os
+import time
+
+GRAPH_PATH = "data/graphs"
 
 
 def evaluate_model(model, X_test, y_test, encoder, test_name: str = "", graph_path: str = "", elapsed_time: float = 0.0):
@@ -48,32 +52,30 @@ def plot_training_history(history, graph_path, test_name):
     plt.savefig(f"{graph_path}/{test_name}/training_history.png")
 
 
-def train_network(test_name: str, use_complex_model: bool, use_mel_filter_bank: bool, use_spectral_features: bool, include_noisy_data: bool):
+def train_network(super_vectors: np.ndarray, labels: list[str], test_name: str, use_complex_model: bool):
     print(f"\n=== Training network: {test_name} ===")
-#     data, labels = fe.get_mfcc_dataset(fe.TRAINING_PATH, fr.TRAINING_PATH, include_noisy=include_noisy_data, use_spectral_features=use_spectral_features, use_mel_filter_bank=use_mel_filter_bank)
-#     encoded_labels, encoder = am.encode_labels(labels, sorted(set(labels)))
     
-#     X_train, X_tmp, y_train, y_tmp = train_test_split(
-#         data,
-#         encoded_labels,
-#         test_size=0.2,
-#         stratify=encoded_labels
-#     )
+    encoded_labels, encoder = network.encode_labels(labels, sorted(set(labels)))
+    X_train, X_tmp, y_train, y_tmp = train_test_split(
+        super_vectors,
+        encoded_labels,
+        test_size=0.2,
+        stratify=encoded_labels
+    )
 
-#     X_val, X_test, y_val, y_test = train_test_split(
-#         X_tmp,
-#         y_tmp,
-#         test_size=0.5,
-#         stratify=y_tmp
-#     )
+    X_val, X_test, y_val, y_test = train_test_split(
+        X_tmp,
+        y_tmp,
+        test_size=0.5,
+        stratify=y_tmp
+    )
     
-#     start_time = time.time()
-#     model = am.create_model(input_shape=data.shape[1:], num_classes=len(encoder.classes_), use_complex=use_complex_model) # type: ignore
-#     history = am.train_model(model, X_train, y_train, X_val, y_val, epochs=25, batch_size=32)
+    start_time = time.time()
+    model = network.create_model(input_shape=super_vectors.shape[1:], num_classes=len(encoder.classes_), use_complex=use_complex_model) # type: ignore
+    history = network.train_model(model, X_train, y_train, X_val, y_val, epochs=25, batch_size=32)
     
-#     elapsed_time = time.time() - start_time
-#     am.evaluate_model(model, X_test, y_test, encoder, test_name, elapsed_time)
+    elapsed_time = time.time() - start_time
+    evaluate_model(model, X_test, y_test, encoder, test_name, graph_path=GRAPH_PATH, elapsed_time=elapsed_time)
     
-#     am.save_model(model, encoder, test_name)
-#     plot_training_history(history, test_name)
-    pass
+    network.save_model(model, encoder, test_name)
+    plot_training_history(history, graph_path=GRAPH_PATH, test_name=test_name)

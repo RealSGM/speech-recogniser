@@ -90,12 +90,15 @@ def main() -> None:
     if delete_vectors:
         delete_vector_files()
         
-    visual_data_train, audio_data_train, labels_train = file_reader.load_dataset(TRAINING)
+    visual_data_train, audio_data_train, labels_train = file_reader.load_dataset(TRAINING, use_mel_filter_bank=True, use_spectral_features=False)
     super_vectors_train = build_super_vectors(audio_data_train, visual_data_train)
     
     print(f"Training Visual Data Shape: {visual_data_train.shape}")
     print(f"Training Audio Data Shape: {audio_data_train.shape}")
     print(f"Training Super Vectors Shape: {super_vectors_train.shape}")
+    print(f"Training Labels Shape: {len(labels_train)}")
+    
+    trainer.train_network(super_vectors_train, labels_train, "test_run", use_complex_model=True)
     
 
 if __name__ == "__main__":

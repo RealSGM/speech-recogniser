@@ -85,8 +85,7 @@ def get_mfcc_signal(speechSignal: np.ndarray, fs: int, frame_size: float, frame_
 
 	mfcc_features = []
 	for frame in frames:
-		mfcc_features.append(
-			mfcc(frame, fs, num_mel_filters, num_ceps, use_spectral_features, use_mel_filter_bank))
+		mfcc_features.append(mfcc(frame, fs, num_mel_filters, num_ceps, use_spectral_features, use_mel_filter_bank))
 
 	return np.array(mfcc_features)
 

@@ -13,19 +13,24 @@ LIP_IDS = [
 
 
 def extract_mouth_roi(frame):
+    # Convert from BGR to RGB
 	rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+	# Use Face Mesh to detect facial landmarks
 	result = mp_face.process(rgb)
 
 	if not result.multi_face_landmarks:
 		return None
 
 	h, w, _ = frame.shape
-
 	pts = []
+
+	# Get lip landmarks
 	for i in LIP_IDS:
 		lm = result.multi_face_landmarks[0].landmark[i]
 		pts.append((int(lm.x * w), int(lm.y * h)))
 
+	# Create bounding box around lips
 	x, y, w, h = cv2.boundingRect(np.array(pts))
 	roi = frame[y:y+h, x:x+w]
 
@@ -38,13 +43,16 @@ def extract_frame_features(frame):
 	if roi is None or roi.size == 0:
 		return np.zeros(64)
 
-	gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-	gray = cv2.resize(gray, (96, 96))
-	gray = gray.astype(np.float32) / 255.0
+	gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY) # Grayscale
+	gray = cv2.resize(gray, (96, 96)) # Resize to 96x96
+	gray = gray.astype(np.float32) / 255.0 # Normalise
 
+	# Perform DCT
 	dct = cv2.dct(gray)
+	# Take top-left 8x8 coefficients
 	coeffs = dct[:8, :8]
 
+	# Flatten to 64-dim vector
 	return coeffs.flatten()
 
 
@@ -112,9 +120,9 @@ def create_dataset(video_data, labels, video_fps, path):
 
 		for frame in video:
 			features.append(extract_frame_features(frame))
-
 		features = np.array(features)
 
+		# Compute deltas and delta-deltas
 		delta = compute_deltas(features)
 		delta_delta = compute_deltas(delta)
 

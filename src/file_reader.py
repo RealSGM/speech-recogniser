@@ -66,12 +66,12 @@ def get_wav_data(path: str) -> tuple[list[np.ndarray], list[str], list[float], l
             video_fps.append(fps)
             audio_data_array.append(audio_data)
             audio_sample_rates.append(audio_sample_rate)
-            break ## REMOVEME
+            # break ## REMOVEME
     
     return video_data, labels, video_fps, audio_data_array, audio_sample_rates
 
 
-def load_dataset(type: str) -> tuple[np.ndarray, np.ndarray, list[str]]:
+def load_dataset(type: str, use_mel_filter_bank: bool = False, use_spectral_features: bool = False) -> tuple[np.ndarray, np.ndarray, list[str]]:
     print(f"Loading dataset of type: {type}")
     full_recording_path = f"{PATH}{RECORDINGS_PATH}{type}/"
     full_mfcc_path = f"{PATH}{VECTORS}{AUDIO}{type}/"
@@ -95,7 +95,7 @@ def load_dataset(type: str) -> tuple[np.ndarray, np.ndarray, list[str]]:
     ## Check if MFCCs exist, if not create them
     if os.listdir(full_mfcc_path) == [] or os.listdir(full_visual_path) == []:
         video_data, labels, video_fps, audio_data_array, _ = get_wav_data(full_recording_path)
-        afe.create_dataset(audio_data_array, labels, use_spectral_features=False, use_mel_filter_bank=False, path=full_mfcc_path)
+        afe.create_dataset(audio_data_array, labels, use_spectral_features=use_spectral_features, use_mel_filter_bank=use_mel_filter_bank, path=full_mfcc_path)
         vfe.create_dataset(video_data, labels, video_fps, path=full_visual_path)
     
     mfcc_data, _ = afe.get_dataset(full_mfcc_path)
