@@ -42,6 +42,9 @@ def build_super_vectors(audio: np.ndarray, visual: np.ndarray) -> np.ndarray:
 
 
 def main() -> None:
+    # Clear console
+    os.system('cls' if os.name == 'nt' else 'clear')
+    
     for config in get_configs():
         if is_training:
             delete_vector_files()
