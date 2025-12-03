@@ -111,7 +111,7 @@ def get_dataset(visual_path):
 	return padded, np.array(labels)
 
 
-def create_dataset(video_data, labels, video_fps, path):
+def create_dataset(video_data, labels, video_fps, path, config) -> None:
 	print("Creating Visual Feature Dataset...")
 
 	for i, video in enumerate(video_data):

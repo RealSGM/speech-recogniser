@@ -2,9 +2,10 @@ import os
 import numpy as np
 import cv2
 import moviepy as mp
-
 import feature_extractor.audio_extractor as afe
 import feature_extractor.visual_extractor as vfe
+from utils.config import MainConfig
+
 
 PATH = "data/"
 RECORDINGS_PATH = "recordings/"
@@ -71,7 +72,7 @@ def get_wav_data(path: str) -> tuple[list[np.ndarray], list[str], list[float], l
     return video_data, labels, video_fps, audio_data_array, audio_sample_rates
 
 
-def load_dataset(type: str, use_mel_filter_bank: bool = False, use_spectral_features: bool = False) -> tuple[np.ndarray, np.ndarray, list[str]]:
+def load_dataset(type: str, config: MainConfig) -> tuple[np.ndarray, np.ndarray, list[str]]:
     print(f"Loading dataset of type: {type}")
     full_recording_path = f"{PATH}{RECORDINGS_PATH}{type}/"
     full_mfcc_path = f"{PATH}{VECTORS}{AUDIO}{type}/"
@@ -95,8 +96,8 @@ def load_dataset(type: str, use_mel_filter_bank: bool = False, use_spectral_feat
     ## Check if MFCCs exist, if not create them
     if os.listdir(full_mfcc_path) == [] or os.listdir(full_visual_path) == []:
         video_data, labels, video_fps, audio_data_array, _ = get_wav_data(full_recording_path)
-        afe.create_dataset(audio_data_array, labels, use_spectral_features=use_spectral_features, use_mel_filter_bank=use_mel_filter_bank, path=full_mfcc_path)
-        vfe.create_dataset(video_data, labels, video_fps, path=full_visual_path)
+        afe.create_dataset(audio_data_array, labels, path=full_mfcc_path, config=config)
+        vfe.create_dataset(video_data, labels, video_fps, path=full_visual_path, config=config)  
     
     mfcc_data, _ = afe.get_dataset(full_mfcc_path)
     visual_data, _ = vfe.get_dataset(full_visual_path)

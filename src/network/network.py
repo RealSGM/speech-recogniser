@@ -10,7 +10,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Activation, Flatten, Conv2D, InputLayer, MaxPooling2D, Dropout, BatchNormalization
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras.optimizers import Adam
-
+from utils.config import MainConfig, TrainingConfig
 
 SAVE_PATH = "data/networks"
 
@@ -22,45 +22,40 @@ def encode_labels(labels: list, class_list: list) -> tuple[np.ndarray, LabelEnco
     return encoded, encoder
 
 
-def create_model(input_shape: tuple, num_classes: int, use_complex=False) -> keras.Model:
-    model = get_complex_model(input_shape, num_classes) if use_complex else get_simple_model(input_shape, num_classes)
-    adam = Adam(learning_rate=0.0005)
+def get_model_from_config(input_shape: tuple, num_classes: int, cfg: TrainingConfig) -> keras.Model:
+    model = Sequential()
+    model.add(InputLayer(shape=input_shape))
+
+    filters = cfg.base_filters
+
+    for _ in range(cfg.conv_blocks):
+        model.add(Conv2D(filters, cfg.kernel_size, activation='relu'))
+        model.add(MaxPooling2D(pool_size=cfg.pool_size))
+
+        if cfg.use_batch_norm:
+            model.add(BatchNormalization())
+
+        filters *= 2
+
+    model.add(Flatten())
+
+    if cfg.dropout_rate > 0:
+        model.add(Dropout(cfg.dropout_rate))
+
+    model.add(Dense(cfg.dense_units, activation='relu'))
+    model.add(Dense(num_classes, activation='softmax'))
+
+    return model
+
+
+def create_model(input_shape: tuple, num_classes: int, config: MainConfig) -> keras.Model:
+    model = get_model_from_config(input_shape, num_classes, config.training)
+    adam = Adam(learning_rate=config.training.learning_rate)
     model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=adam) # type: ignore
     return model
 
 
-def get_simple_model(input_shape: tuple, num_classes: int) -> tf.keras.Model: # type: ignore
-    model = Sequential() 
-    model.add(InputLayer(shape=input_shape)) 
-    model.add(Conv2D(64, (3, 3), activation='relu')) 
-    model.add(Conv2D(64, (3, 3), activation='relu')) 
-    model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(3, 3))) 
-    model.add(Flatten()) 
-    model.add(Dense(256)) 
-    model.add(Activation('relu')) 
-    model.add(Dense(num_classes)) 
-    model.add(Activation('softmax')) 
-    return model
-
-
-def get_complex_model(input_shape: tuple, num_classes: int) -> tf.keras.Model: # type: ignore
-    model = Sequential()
-    model.add(InputLayer(shape=input_shape))
-    model.add(Conv2D(64, (3, 3), activation='relu'))
-    model.add(MaxPooling2D(pool_size=(3, 3)))
-    model.add(Conv2D(128, (3, 3), activation='relu'))
-    model.add(Conv2D(64, (3, 3), activation='relu'))
-    model.add(MaxPooling2D(pool_size=(3, 3)))
-    model.add(Flatten())
-    model.add(Dropout(0.5))
-    model.add(Dense(256, activation='relu'))
-    model.add(BatchNormalization()) 
-    model.add(Dense(num_classes, activation='softmax'))
-    return model
-
-
-def train_model(model, X_train, y_train, X_val, y_val, epochs=25, batch_size=32):
+def train_model(model, X_train, y_train, X_val, y_val, config: MainConfig):
     # Stop early if no improvement
     early_stop = EarlyStopping(
         monitor='val_loss',
@@ -79,8 +74,8 @@ def train_model(model, X_train, y_train, X_val, y_val, epochs=25, batch_size=32)
     history = model.fit(
         X_train, y_train,
         validation_data=(X_val, y_val),
-        batch_size=batch_size,
-        epochs=epochs,
+        batch_size=config.training.batch_size,
+        epochs=config.training.epochs,
         verbose="auto",
         callbacks=[lr_reduction, early_stop] 
     )
@@ -88,21 +83,24 @@ def train_model(model, X_train, y_train, X_val, y_val, epochs=25, batch_size=32)
 
 
 # Save the model and encoder
-def save_model(model, encoder, test_name="test") -> None:
+def save_model(model, encoder, config: MainConfig) -> None:
     # Create save directory if it doesn't exist
-    if not os.path.exists(f"{SAVE_PATH}/{test_name}"):
-        os.makedirs(f"{SAVE_PATH}/{test_name}")
     
-    model.save(f"{SAVE_PATH}/{test_name}/speech_model.keras") # type: ignore
+    full_save_path = f"{SAVE_PATH}/{config.test_name}"
     
-    with open(f"{SAVE_PATH}/{test_name}/label_encoder.pkl", "wb") as f:
+    if not os.path.exists(f"{full_save_path}"):
+        os.makedirs(f"{full_save_path}")
+    
+    model.save(f"{full_save_path}/speech_model.keras") # type: ignore
+    
+    with open(f"{full_save_path}/label_encoder.pkl", "wb") as f:
         pickle.dump(encoder, f)
 
 
 # Load the model and encoder
-def load_model(test_name="test") -> tf.keras.Model: # type: ignore
-    model = tf.keras.models.load_model(f"{SAVE_PATH}/{test_name}/speech_model.keras") # type: ignore
+def load_model(config: MainConfig) -> tf.keras.Model: # type: ignore
+    model = tf.keras.models.load_model(f"{SAVE_PATH}/{config.test_name}/speech_model.keras") # type: ignore
     
-    with open(f"{SAVE_PATH}/{test_name}/label_encoder.pkl", "rb") as f:
+    with open(f"{SAVE_PATH}/{config.test_name}/label_encoder.pkl", "rb") as f:
         encoder = pickle.load(f)
     return model, encoder

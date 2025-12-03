@@ -2,14 +2,18 @@ import numpy as np
 import os
 import librosa
 
+from utils.config import MainConfig
+
 MIN_INT = 1e-10
 
 
 def spectral_features(magnitude: np.ndarray, fs: int) -> np.ndarray:
-	# Compute spectral centroid, bandwidth, flatness using librosa
 	centroid = librosa.feature.spectral_centroid(S=magnitude[np.newaxis, :], sr=fs)[0, 0]
 	bandwidth = librosa.feature.spectral_bandwidth(S=magnitude[np.newaxis, :], sr=fs)[0, 0]
 	flatness = librosa.feature.spectral_flatness(S=magnitude[np.newaxis, :])[0, 0]
+
+	centroid /= (fs / 2 + MIN_INT)
+	bandwidth /= (fs / 2 + MIN_INT)
 
 	centroid /= (fs / 2)
 	bandwidth /= (fs / 2)
@@ -61,21 +65,19 @@ def mfcc(speechFrame: np.ndarray, fs: int, num_mel_filters: int, num_ceps: int,
 	return np.concatenate([mfcc_vals, [frame_energy]])
 
 
-def get_mfcc_signal(speechSignal: np.ndarray, fs: int, frame_size: float, frame_stride: float,
-		num_mel_filters: int, num_ceps: int, use_spectral_features: bool,
-		use_mel_filter_bank: bool) -> np.ndarray:
+def get_mfcc_signal(speechSignal: np.ndarray, fs: int, config: MainConfig) -> np.ndarray:
 
 	speechSignal = np.asarray(speechSignal)
 
 	if speechSignal.ndim > 1:
 		speechSignal = np.mean(speechSignal, axis=1)
 
-	frame_length = int(frame_size * fs)
-	frame_step = int(frame_stride * fs)
+	frame_length = int(config.audio.frame_size * fs)
+	frame_step = int(config.audio.frame_stride * fs)
 
 	if speechSignal.size < frame_length:
-		num_extra = 4 if use_spectral_features else 1
-		return np.zeros((1, num_ceps + num_extra))
+		num_extra = 4 if config.audio.use_spectral_features else 1
+		return np.zeros((1, config.audio.num_ceps + num_extra))
 
 	frames = librosa.util.frame(
 		speechSignal,
@@ -85,7 +87,7 @@ def get_mfcc_signal(speechSignal: np.ndarray, fs: int, frame_size: float, frame_
 
 	mfcc_features = []
 	for frame in frames:
-		mfcc_features.append(mfcc(frame, fs, num_mel_filters, num_ceps, use_spectral_features, use_mel_filter_bank))
+		mfcc_features.append(mfcc(frame, fs, config.audio.num_mel_filters, config.audio.num_ceps, config.audio.use_spectral_features, config.audio.use_mel_filter_bank))
 
 	return np.array(mfcc_features)
 
@@ -97,13 +99,13 @@ def save_mfcc(label: str, mfcc_features: np.ndarray, index: int, path: str) -> N
 	np.save(f"{label_dir}/mfcc_{index:03d}.npy", mfcc_features)
 
 
-def create_dataset(audio_data, labels, use_spectral_features: bool, use_mel_filter_bank: bool, path: str) -> None:
+def create_dataset(audio_data, labels, path: str, config: MainConfig) -> None:
 	print("Creating MFCC dataset...")
 	for i, sig in enumerate(audio_data):
 		label = labels[i]
 
 		signal = preprocess_signal(sig)
-		mfcc_raw = get_mfcc_signal( signal, fs=16000, frame_size=0.025, frame_stride=0.01, num_mel_filters=40, num_ceps=13, use_spectral_features=use_spectral_features, use_mel_filter_bank=use_mel_filter_bank)
+		mfcc_raw = get_mfcc_signal(signal, fs=16000, config=config)
 		mfcc_norm = (mfcc_raw - np.mean(mfcc_raw)) / np.std(mfcc_raw)
 
 		delta = compute_deltas(mfcc_norm)

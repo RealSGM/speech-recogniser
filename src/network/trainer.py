@@ -1,31 +1,35 @@
 import network.network as network
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn import metrics
 import os
 import time
+
+from sklearn.model_selection import train_test_split
+from sklearn import metrics
+from utils.config import MainConfig
 
 GRAPH_PATH = "data/graphs"
 
 
-def evaluate_model(model, X_test, y_test, encoder, test_name: str = "", graph_path: str = "", elapsed_time: float = 0.0):
+def evaluate_model(model, X_test, y_test, elapsed_time: float, config: MainConfig):
     predicted_probs = model.predict(X_test, verbose=0)
     predicted = np.argmax(predicted_probs, axis=1)
     actual = np.argmax(y_test, axis=1)
 
     accuracy = metrics.accuracy_score(actual, predicted)
     
-    # Create graph directory if it doesn't exist
-    if not os.path.exists(f"{graph_path}/{test_name}"):
-        os.makedirs(f"{graph_path}/{test_name}")
+    full_graph_path = f"{GRAPH_PATH}/{config.test_name}"
     
-    with open(f"{graph_path}/{test_name}/training.txt", "w") as f:
+    # Create graph directory if it doesn't exist
+    if not os.path.exists(full_graph_path):
+        os.makedirs(full_graph_path)
+    
+    with open(f"{full_graph_path}/training.txt", "w") as f:
         f.write(f"Elapsed Time: {elapsed_time:.2f} seconds\n")
         f.write(f"Test Accuracy: {accuracy * 100:.2f}%\n")
 
 
-def plot_training_history(history, graph_path, test_name):
+def plot_training_history(history, config: MainConfig):
     # Plot training & validation accuracy values
     plt.figure(figsize=(12, 4))
     plt.subplot(1, 2, 1)
@@ -45,15 +49,17 @@ def plot_training_history(history, graph_path, test_name):
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='upper left')
     
+    full_graph_path = f"{GRAPH_PATH}/{config.test_name}"
+    
     # Create graph directory if it doesn't exist
-    if not os.path.exists(f"{graph_path}/{test_name}"):
-        os.makedirs(f"{graph_path}/{test_name}")
+    if not os.path.exists(full_graph_path):
+        os.makedirs(full_graph_path)
         
-    plt.savefig(f"{graph_path}/{test_name}/training_history.png")
+    plt.savefig(f"{full_graph_path}/training_history.png")
 
 
-def train_network(super_vectors: np.ndarray, labels: list[str], test_name: str, use_complex_model: bool):
-    print(f"\n=== Training network: {test_name} ===")
+def train_network(super_vectors: np.ndarray, labels: list[str], config: MainConfig):
+    print(f"\n=== Training network: {config.test_name} ===")
     
     encoded_labels, encoder = network.encode_labels(labels, sorted(set(labels)))
     X_train, X_tmp, y_train, y_tmp = train_test_split(
@@ -71,11 +77,11 @@ def train_network(super_vectors: np.ndarray, labels: list[str], test_name: str, 
     )
     
     start_time = time.time()
-    model = network.create_model(input_shape=super_vectors.shape[1:], num_classes=len(encoder.classes_), use_complex=use_complex_model) # type: ignore
-    history = network.train_model(model, X_train, y_train, X_val, y_val, epochs=25, batch_size=32)
+    model = network.create_model(input_shape=super_vectors.shape[1:], num_classes=len(encoder.classes_), config=config)
+    history = network.train_model(model, X_train, y_train, X_val, y_val, config)
     
     elapsed_time = time.time() - start_time
-    evaluate_model(model, X_test, y_test, encoder, test_name, graph_path=GRAPH_PATH, elapsed_time=elapsed_time)
+    evaluate_model(model, X_test, y_test, elapsed_time, config=config)
     
-    network.save_model(model, encoder, test_name)
-    plot_training_history(history, graph_path=GRAPH_PATH, test_name=test_name)
+    network.save_model(model, encoder, config=config)
+    plot_training_history(history, config=config)
