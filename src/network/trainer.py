@@ -1,35 +1,31 @@
 import network.network as network
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 import time
+import file_reader as fr
 
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from utils.config import MainConfig
 
-GRAPH_PATH = "data/graphs"
 
-
-def evaluate_model(model, X_test, y_test, elapsed_time: float, config: MainConfig):
+def save_results(model, X_test, y_test, elapsed_time: float, config: MainConfig):
     predicted_probs = model.predict(X_test, verbose=0)
     predicted = np.argmax(predicted_probs, axis=1)
     actual = np.argmax(y_test, axis=1)
-
     accuracy = metrics.accuracy_score(actual, predicted)
     
-    full_graph_path = f"{GRAPH_PATH}/{config.test_name}"
-    
-    # Create graph directory if it doesn't exist
-    if not os.path.exists(full_graph_path):
-        os.makedirs(full_graph_path)
-    
-    with open(f"{full_graph_path}/training.txt", "w") as f:
-        f.write(f"Elapsed Time: {elapsed_time:.2f} seconds\n")
-        f.write(f"Test Accuracy: {accuracy * 100:.2f}%\n")
+    # Add to JSON results file
+    results = {
+        f"training_accuracy_{config.notes}": f"{accuracy * 100:.2f}%",
+        f"elapsed_time_{config.notes}": f"{elapsed_time:.2f}"
+    }
+    fr.add_to_results_file(config, results)
 
 
 def plot_training_history(history, config: MainConfig):
+    config_path = fr.get_config_path(config)
+    
     # Plot training & validation accuracy values
     plt.figure(figsize=(12, 4))
     plt.subplot(1, 2, 1)
@@ -48,22 +44,15 @@ def plot_training_history(history, config: MainConfig):
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='upper left')
-    
-    full_graph_path = f"{GRAPH_PATH}/{config.test_name}"
-    
-    # Create graph directory if it doesn't exist
-    if not os.path.exists(full_graph_path):
-        os.makedirs(full_graph_path)
-        
-    plt.savefig(f"{full_graph_path}/training_history.png")
+    plt.savefig(f"{config_path}/training_history_{config.notes}.png")
 
 
-def train_network(super_vectors: np.ndarray, labels: list[str], config: MainConfig):
+def train_network(vectors: np.ndarray, labels: list[str], config: MainConfig):
     print(f"\n=== Training network: {config.test_name} ===")
     
     encoded_labels, encoder = network.encode_labels(labels, sorted(set(labels)))
     X_train, X_tmp, y_train, y_tmp = train_test_split(
-        super_vectors,
+        vectors,
         encoded_labels,
         test_size=0.2,
         stratify=encoded_labels
@@ -76,12 +65,11 @@ def train_network(super_vectors: np.ndarray, labels: list[str], config: MainConf
         stratify=y_tmp
     )
     
-    start_time = time.time()
-    model = network.create_model(input_shape=super_vectors.shape[1:], num_classes=len(encoder.classes_), config=config)
+    model = network.create_model(input_shape=vectors.shape[1:], num_classes=len(encoder.classes_), config=config)
     history = network.train_model(model, X_train, y_train, X_val, y_val, config)
     
-    elapsed_time = time.time() - start_time
-    evaluate_model(model, X_test, y_test, elapsed_time, config=config)
+    elapsed_time = time.time() - config.start_time
     
-    network.save_model(model, encoder, config=config)
+    save_results(model, X_test, y_test, elapsed_time, config=config)
     plot_training_history(history, config=config)
+    network.save_model(model, encoder, config=config)

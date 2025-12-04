@@ -1,10 +1,16 @@
 import numpy as np
 import os
 import librosa
-
 from utils.config import MainConfig
 
 MIN_INT = 1e-10
+
+
+def save_vector_file(label: str, mfcc_features: np.ndarray, index: int, path: str) -> None:
+	label_dir = os.path.join(path, label)
+	if not os.path.exists(label_dir):
+		os.makedirs(label_dir)
+	np.save(f"{label_dir}/vector_{index:03d}.npy", mfcc_features)
 
 
 def spectral_features(magnitude: np.ndarray, fs: int) -> np.ndarray:
@@ -92,17 +98,11 @@ def get_mfcc_signal(speechSignal: np.ndarray, fs: int, config: MainConfig) -> np
 	return np.array(mfcc_features)
 
 
-def save_mfcc(label: str, mfcc_features: np.ndarray, index: int, path: str) -> None:
-	label_dir = os.path.join(path, label)
-	if not os.path.exists(label_dir):
-		os.makedirs(label_dir)
-	np.save(f"{label_dir}/mfcc_{index:03d}.npy", mfcc_features)
-
-
 def create_dataset(audio_data, labels, path: str, config: MainConfig) -> None:
 	print("Creating MFCC dataset...")
 	for i, sig in enumerate(audio_data):
 		label = labels[i]
+		print(f"Processing file {i + 1}/{len(audio_data)}: Label = {label}")
 
 		signal = preprocess_signal(sig)
 		mfcc_raw = get_mfcc_signal(signal, fs=16000, config=config)
@@ -112,7 +112,7 @@ def create_dataset(audio_data, labels, path: str, config: MainConfig) -> None:
 		delta_delta = compute_deltas(delta)
 
 		final = np.concatenate((mfcc_norm, delta, delta_delta), axis=1)
-		save_mfcc(label, final, i, path)
+		save_vector_file(label, final, i, path)
 
 
 def get_dataset(mfcc_path: str) -> tuple[np.ndarray, np.ndarray]:

@@ -80,33 +80,43 @@ class MainConfig:
         visual: 'VisualConfig' = VisualConfig(),
         training: 'TrainingConfig' = TrainingConfig(),
         integration: 'IntegrationConfig' = IntegrationConfig(),
+        start_time: float = 0.0,
+        notes: str = "default",
     ):
         self.test_name = test_name
         self.audio = audio
         self.visual = visual
         self.training = training
         self.integration = integration
+        self.start_time = start_time
+        self.notes = notes
 
 
 def get_configs() -> list[MainConfig]:
     return configs
 
 
-deeper_model = TrainingConfig(
-    conv_blocks=4,
-    base_filters=64,
-    dropout_rate=0.5,
-    use_batch_norm=False,
+late_integration = IntegrationConfig(
+    integration_type="late",
+    audio_weight=0.5,
+    visual_weight=0.5,
 )
 
-light_model = TrainingConfig(
-    conv_blocks=2,
-    base_filters=16,
-    dense_units=64
+audio_only = IntegrationConfig(
+    integration_type="late",
+    audio_weight=1.0,
+    visual_weight=0.0,
+)
+
+visual_only = IntegrationConfig(
+    integration_type="late",
+    audio_weight=0.0,
+    visual_weight=1.0,
 )
 
 configs = [
     MainConfig(test_name="default"),
-    MainConfig(test_name="light_model", training=light_model),
-    MainConfig(test_name="deeper_model", training=deeper_model),
+    MainConfig(test_name="default_late_integration", integration=late_integration),
+    MainConfig(test_name="audio_only_test", integration=audio_only),
+    MainConfig(test_name="visual_only_test", integration=visual_only),
 ]

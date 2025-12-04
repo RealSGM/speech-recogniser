@@ -3,14 +3,20 @@ import numpy as np
 import cv2
 import mediapipe as mp
 
-mp_face = mp.solutions.face_mesh.FaceMesh(static_image_mode=False) # type: ignore
 
+mp_face = mp.solutions.face_mesh.FaceMesh(static_image_mode=False) # type: ignore
 
 LIP_IDS = [
 	61,146,91,181,84,17,314,405,321,375,
 	291,308,324,318,402,317,14,87,178,88
 ]
 
+
+def save_vector_file(label: str, mfcc_features: np.ndarray, index: int, path: str) -> None:
+	label_dir = os.path.join(path, label)
+	if not os.path.exists(label_dir):
+		os.makedirs(label_dir)
+	np.save(f"{label_dir}/vector_{index:03d}.npy", mfcc_features)
 
 def extract_mouth_roi(frame):
     # Convert from BGR to RGB
@@ -71,12 +77,6 @@ def compute_deltas(features, N=2):
 	return np.array(deltas)
 
 
-def save_visual(label, data, index, path):
-	dir = os.path.join(path, label)
-	os.makedirs(dir, exist_ok=True)
-	np.save(f"{dir}/visual_{index:03d}.npy", data)
-
-
 def pad_visual(data):
 	max_len = max(x.shape[0] for x in data)
 	num_feat = data[0].shape[1]
@@ -116,6 +116,8 @@ def create_dataset(video_data, labels, video_fps, path, config) -> None:
 
 	for i, video in enumerate(video_data):
 		label = labels[i]
+		print(f"Processing video {i+1}/{len(video_data)} - Label: {label}")
+
 		features = []
 
 		for frame in video:
@@ -128,5 +130,5 @@ def create_dataset(video_data, labels, video_fps, path, config) -> None:
 
 		final = np.concatenate((features, delta, delta_delta), axis=1)
 
-		save_visual(label, final, i, path)
+		save_vector_file(label, final, i, path)
 
