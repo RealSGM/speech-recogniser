@@ -1,2 +1,0 @@
-Elapsed Time: 6.33 seconds
-Test Accuracy: 77.50%
