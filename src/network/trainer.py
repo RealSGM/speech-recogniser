@@ -17,7 +17,7 @@ def save_results(model, X_test, y_test, elapsed_time: float, config: MainConfig)
     
     # Add to JSON results file
     results = {
-        f"training_accuracy_{config.notes}": f"{accuracy * 100:.2f}%",
+        f"training_accuracy_{config.notes}": f"{accuracy}",
         f"elapsed_time_{config.notes}": f"{elapsed_time:.2f}"
     }
     fr.add_to_results_file(config, results)
@@ -47,8 +47,10 @@ def plot_training_history(history, config: MainConfig):
     plt.savefig(f"{config_path}/training_history_{config.notes}.png")
 
 
-def train_network(vectors: np.ndarray, labels: list[str], config: MainConfig):
-    print(f"\n=== Training network: {config.test_name} ===")
+def run_network(vectors: np.ndarray, labels: list[str], config: MainConfig):
+    print(f"==============================")
+    print(f"    TRAINING NETWORK: {config.test_name}")
+    print(f"==============================\n")
     
     encoded_labels, encoder = network.encode_labels(labels, sorted(set(labels)))
     X_train, X_tmp, y_train, y_tmp = train_test_split(

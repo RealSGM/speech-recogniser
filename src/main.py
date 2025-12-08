@@ -10,6 +10,7 @@ TRAINING = "training"
 TESTING = "testing"
 VECTOR_PATH = "data/vectors"
 
+
 def build_super_vectors(audio: np.ndarray, visual: np.ndarray) -> np.ndarray:
     super_vectors = []
 
@@ -33,9 +34,12 @@ def build_super_vectors(audio: np.ndarray, visual: np.ndarray) -> np.ndarray:
     return super_vectors
 
 
-def calculate_late_integration(config: MainConfig) -> None:
+def calculate_late_integration(config: MainConfig, key: str) -> None:
     # Read last saved results for audio/visual models
-    audio_result, visual_result = tester.network.get_results_from_file(config)
+    audio_result, visual_result = tester.network.get_results_from_file(config, key)
+    
+    audio_result = float(audio_result)
+    visual_result = float(visual_result)
 
     if (config.integration.audio_weight + config.integration.visual_weight) == 0:
         weighted_score = 0.0
@@ -45,94 +49,46 @@ def calculate_late_integration(config: MainConfig) -> None:
             config.integration.visual_weight * visual_result
         ) / (config.integration.audio_weight + config.integration.visual_weight)
 
-    fr.add_to_results_file(config, {"late_results:": f"{weighted_score * 100:.2f}%"})
+    fr.add_to_results_file(config, {f"late_integration_{key}_results:": f"{weighted_score * 100:.2f}%"})
 
 
-def run_early_integration(
-    config: MainConfig,
-    audio_train, visual_train, labels_train,
-    audio_test, visual_test, labels_test
-) -> None:
-
-    print("\n=== EARLY INTEGRATION ===")
-    config.notes = "early"
-
-    super_train = build_super_vectors(audio_train, visual_train)
-    trainer.train_network(super_train, labels_train, config=config)
-
-    super_test = build_super_vectors(audio_test, visual_test)
-    tester.test_network(super_test, labels_test, config=config)
-
-
-def run_late_integration(
-    config: MainConfig,
-    audio_train, visual_train, labels_train,
-    audio_test, visual_test, labels_test
-) -> None:
-
-    print("\n=== LATE INTEGRATION ===")
-
-    # AUDIO BRANCH
-    if config.integration.audio_weight > 0:
-        print("\n--- Training AUDIO model ---")
-        config.notes = "audio"
-        trainer.train_network(audio_train, labels_train, config=config)
-        tester.test_network(audio_test, labels_test, config=config)
-
-    # VISUAL BRANCH
-    if config.integration.visual_weight > 0:
-        print("\n--- Training VISUAL model ---")
-        config.notes = "visual"
-        trainer.train_network(visual_train, labels_train, config=config)
-        tester.test_network(visual_test, labels_test, config=config)
-
-    # Compute weighted late-integration score
-    calculate_late_integration(config)
+def run_network(caller, cfg: MainConfig, PATH: str) -> None:
+    visual_data, audio_data, labels = fr.load_dataset(PATH, cfg)
+    
+    match cfg.integration.integration_type:
+        case "early":
+            super_train = build_super_vectors(audio_data, visual_data)
+            caller.run_network(super_train, labels, config=cfg)
+        case "late":
+            if cfg.integration.audio_weight > 0:
+                cfg.notes = "audio"
+                caller.run_network(audio_data, labels, config=cfg)
+            if cfg.integration.visual_weight > 0:
+                cfg.notes = "visual"
+                caller.run_network(visual_data, labels, config=cfg)
+            calculate_late_integration(cfg, PATH.lower())
+        case _:
+            print(f"Unknown integration type: {cfg.integration.integration_type}")
 
 
 def run_full_session() -> None:
-
     for config in get_configs():
-
-        # Show test name clearly
-        print(f"\n==============================")
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print(f"==============================")
         print(f" RUNNING CONFIG: {config.test_name}")
         print(f"==============================\n")
 
         # Create config folder
-        fr.create_config_path(config)
+        # fr.create_config_path(config)
         config.start_time = time.time()
 
-        # Load datasets
-        visual_data_train, audio_data_train, labels_train = fr.load_dataset(TRAINING, config)
-        visual_data_test,  audio_data_test,  labels_test  = fr.load_dataset(TESTING, config)
-
-        # Decide integration strategy
-        match config.integration.integration_type:
-            case "early":
-                run_early_integration(
-                    config,
-                    audio_data_train, visual_data_train, labels_train,
-                    audio_data_test,  visual_data_test,  labels_test,
-                )
-
-            case "late":
-                run_late_integration(
-                    config,
-                    audio_data_train, visual_data_train, labels_train,
-                    audio_data_test,  visual_data_test,  labels_test,
-                )
-
-            case _:
-                print(f"Unknown integration type: {config.integration.integration_type}")
+        # run_network(trainer, config, TRAINING)
+        run_network(tester, config, TESTING)
 
 
 def main() -> None:
-    # optional: clear terminal output
-    os.system('cls' if os.name == 'nt' else 'clear')
     run_full_session()
 
 
 if __name__ == "__main__":
     main()
-    

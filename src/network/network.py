@@ -20,6 +20,7 @@ def encode_labels(labels: list, class_list: list) -> tuple[np.ndarray, LabelEnco
     encoded = to_categorical(encoder.transform(labels))
     return encoded, encoder
 
+
 def get_model_from_config(input_shape: tuple, num_classes: int, cfg: TrainingConfig) -> keras.Model:
     """
     Generic 2D-CNN model used for audio and early-integration super-vectors.
@@ -48,6 +49,7 @@ def get_model_from_config(input_shape: tuple, num_classes: int, cfg: TrainingCon
     model.add(Dense(num_classes, activation='softmax'))
 
     return model
+
 
 def get_visual_temporal_model(input_shape: tuple, num_classes: int, cfg: TrainingConfig) -> keras.Model:
     """
@@ -100,46 +102,16 @@ def get_visual_temporal_model(input_shape: tuple, num_classes: int, cfg: Trainin
     return model
 
 
-def create_model(input_shape: tuple, num_classes: int, config: MainConfig) -> keras.Model:
-    """
-    Chooses model architecture based on config.notes:
-      - "visual": TimeDistributed CNN + BiLSTM (visual-only)
-      - anything else: generic 2D-CNN (audio, early integration, etc.)
-    """
-    # Visual-only branch
-    if config.notes == "visual":
-        model = get_visual_temporal_model(input_shape, num_classes, config.training)
-    else:
-        # Audio / early / other branches
-        model = get_model_from_config(input_shape, num_classes, config.training)
+# def create_model(input_shape: tuple, num_classes: int, config: MainConfig) -> keras.Model:
+#     # Visual-only branch
+#     if config.notes == "visual":
+#         model = get_visual_temporal_model(input_shape, num_classes, config.training)
+#     else:
+#         # Audio / early / other branches
+#         model = get_model_from_config(input_shape, num_classes, config.training)
 
-    adam = Adam(learning_rate=config.training.learning_rate)
-    model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=adam)  # type: ignore
-    return model
-
-# def get_model_from_config(input_shape: tuple, num_classes: int, cfg: TrainingConfig) -> keras.Model:
-#     model = Sequential()
-#     model.add(InputLayer(shape=input_shape))
-
-#     filters = cfg.base_filters
-
-#     for _ in range(cfg.conv_blocks):
-#         model.add(Conv2D(filters, cfg.kernel_size, activation='relu'))
-#         model.add(MaxPooling2D(pool_size=cfg.pool_size))
-
-#         if cfg.use_batch_norm:
-#             model.add(BatchNormalization())
-
-#         filters *= 2
-
-#     model.add(Flatten())
-
-#     if cfg.dropout_rate > 0:
-#         model.add(Dropout(cfg.dropout_rate))
-
-#     model.add(Dense(cfg.dense_units, activation='relu'))
-#     model.add(Dense(num_classes, activation='softmax'))
-
+#     adam = Adam(learning_rate=config.training.learning_rate)
+#     model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=adam)  # type: ignore
 #     return model
 
 
@@ -197,16 +169,17 @@ def load_model(config: MainConfig) -> tf.keras.Model: # type: ignore
         encoder = pickle.load(f)
     return model, encoder
 
-def get_results_from_file(config: MainConfig) -> tuple[float, float]:
+
+def get_results_from_file(config: MainConfig, key: str) -> tuple[float, float]:
     audio_result = 0.0
     visual_result = 0.0
     
     results = fr.get_results_dict(config)
     
     if config.integration.audio_weight > 0:
-        audio_result = results.get("test_accuracy_audio", 0.0)
+        audio_result = results.get(f"{key}_accuracy_audio", 0.0)
     
     if config.integration.visual_weight > 0:
-        visual_result = results.get("test_accuracy_visual", 0.0)
+        visual_result = results.get(f"{key}_accuracy_visual", 0.0)
         
     return audio_result, visual_result

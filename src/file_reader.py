@@ -17,6 +17,7 @@ VECTORS = "vectors/"
 AUDIO = "audio/"
 VISUAL = "visual/"
 
+
 def create_config_path(config: MainConfig) -> str:
     p = get_config_path(config)
     if os.path.exists(p):
@@ -28,8 +29,10 @@ def create_config_path(config: MainConfig) -> str:
     with open(f"{p}/results.json","w") as f: f.write("{}")
     return p
 
+
 def get_config_path(config: MainConfig) -> str:
     return f"{PATH}{CONFIGS}{config.test_name}/"
+
 
 def get_results_dict(config: MainConfig) -> dict:
     fpath = f"{get_config_path(config)}/results.json"
@@ -37,17 +40,19 @@ def get_results_dict(config: MainConfig) -> dict:
         with open(fpath,"r") as f: return json.load(f)
     except: return {}
 
+
 def add_to_results_file(config: MainConfig, results: dict):
     fpath = f"{get_config_path(config)}/results.json"
     d = get_results_dict(config)
     d.update(results)
     with open(fpath,"w") as f: json.dump(d,f,indent=4)
 
+
 def get_data_from_mp4(path: str):
     cap = cv2.VideoCapture(path)
     frames = []
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    if not fps or fps == 0: fps = 25.0
+    fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
+    
     while True:
         ret, frame = cap.read()
         if not ret: break
@@ -56,11 +61,52 @@ def get_data_from_mp4(path: str):
     video = np.array(frames, dtype=np.uint8)
 
     clip = mp.VideoFileClip(path)
-    audio_data = clip.audio.to_soundarray()
-    audio_sr = clip.audio.fps
+    audio_data = clip.audio.to_soundarray() # type: ignore
+    audio_sr = clip.audio.fps # type: ignore
     clip.close()
 
     return video, fps, audio_data, audio_sr
+
+
+def get_audio_visual_recordings(cfg: MainConfig, type: str, label: str, root: str) -> tuple[list[np.ndarray], list[np.ndarray], list[float], list[str]]:
+	label_dir = os.path.join(root, label)
+	videos = []
+	audios = []
+	fps_list = []
+	labs = []
+
+	files = [f for f in sorted(os.listdir(label_dir)) if f.endswith(".mp4")]
+	total = len(files)
+
+	for i, fname in enumerate(files):
+		print(f"\r    Loading {label} {i + 1}/{total:>2}", end="", flush=True)
+
+		p = os.path.join(label_dir, fname)
+		v, fps, a, sr = get_data_from_mp4(p)
+
+		videos.append(v)
+		fps_list.append(fps)
+		audios.append(a)
+		labs.append(label)
+	print()
+
+	return videos, audios, fps_list, labs
+
+
+def get_labels_from_files(type: str, config: MainConfig) -> list[str]:
+    root = f"{PATH}{RECORDINGS_PATH}{type}/"
+    labels = []
+
+    for label in sorted(os.listdir(root)):
+        label_dir = os.path.join(root, label)
+        if not os.path.isdir(label_dir):
+            continue
+
+        files = [f for f in sorted(os.listdir(label_dir)) if f.endswith(".mp4")]
+        labels.extend([label] * len(files))
+
+    return labels
+
 
 def load_dataset(type: str, config: MainConfig):
     root = f"{PATH}{RECORDINGS_PATH}{type}/"
@@ -70,35 +116,24 @@ def load_dataset(type: str, config: MainConfig):
     os.makedirs(mfcc_path, exist_ok=True)
     os.makedirs(vis_path, exist_ok=True)
 
-    labels = []
-
     if len(os.listdir(mfcc_path)) == 0 or len(os.listdir(vis_path)) == 0:
         for label in sorted(os.listdir(root)):
             label_dir = os.path.join(root, label)
+            
             if not os.path.isdir(label_dir):
                 continue
-
-            videos = []
-            audios = []
-            fps_list = []
-            labs = []
-
-            for fname in sorted(os.listdir(label_dir)):
-                if fname.endswith(".mp4"):
-                    p = os.path.join(label_dir, fname)
-                    v, fps, a, sr = get_data_from_mp4(p)
-                    videos.append(v)
-                    fps_list.append(fps)
-                    audios.append(a)
-                    labs.append(label)
-                    labels.append(label)
-
+            
+            print(f"\n\033[36mProcessing label: {label}\033[0m")
+            videos, audios, fps_list, labs = get_audio_visual_recordings(cfg=config, type=type, label=label, root=root)
+            print(f"\033[33mExtracting audio features for {len(audios)} recordings...\033[0m")
             afe.create_dataset(audios, labs, path=mfcc_path, config=config)
+            print(f"\033[33mExtracting video features for {len(videos)} recordings...\033[0m")
             vfe.create_dataset(videos, labs, fps_list, path=vis_path, config=config)
 
             del videos, audios, fps_list, labs
             import gc; gc.collect()
 
+    labels = get_labels_from_files(type, config)
     mfcc, _ = afe.get_dataset(mfcc_path)
     vis, _ = vfe.get_dataset(vis_path)
     return mfcc, vis, labels

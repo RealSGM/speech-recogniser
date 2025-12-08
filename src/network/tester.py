@@ -19,11 +19,13 @@ def plot_confusion_matrix(cm, encoder, accuracy, config: MainConfig):
     
     plt.savefig(f"{config_path}/confusion_matrix.png")
     
-    fr.add_to_results_file(config, {f"test_accuracy_{config.notes}:": f"{accuracy * 100:.2f}%"})
+    fr.add_to_results_file(config, {f"testing_accuracy_{config.notes}:": f"{accuracy}"})
 
 
-def test_network(super_vectors: np.ndarray, labels: list[str], config: MainConfig):
-    print(f"\n=== Testing network: {config.test_name} ===")
+def run_network(super_vectors: np.ndarray, labels: list[str], config: MainConfig):
+    print(f"==============================")
+    print(f"    TESTING NETWORK: {config.test_name}")
+    print(f"==============================\n")
     encoded_labels, encoder = network.encode_labels(labels, sorted(set(labels)))
     
     model, _ = network.load_model(config=config)

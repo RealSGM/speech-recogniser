@@ -99,11 +99,9 @@ def get_mfcc_signal(speechSignal: np.ndarray, fs: int, config: MainConfig) -> np
 
 
 def create_dataset(audio_data, labels, path: str, config: MainConfig) -> None:
-	print("Creating MFCC dataset...")
 	for i, sig in enumerate(audio_data):
+		print(f"\r    Processing audio {i + 1}/{len(audio_data):>2}", end="", flush=True)
 		label = labels[i]
-		print(f"Processing file {i + 1}/{len(audio_data)}: Label = {label}")
-
 		signal = preprocess_signal(sig)
 		mfcc_raw = get_mfcc_signal(signal, fs=16000, config=config)
 		mfcc_norm = (mfcc_raw - np.mean(mfcc_raw)) / np.std(mfcc_raw)
@@ -113,6 +111,7 @@ def create_dataset(audio_data, labels, path: str, config: MainConfig) -> None:
 
 		final = np.concatenate((mfcc_norm, delta, delta_delta), axis=1)
 		save_vector_file(label, final, i, path)
+	print()
 
 
 def get_dataset(mfcc_path: str) -> tuple[np.ndarray, np.ndarray]:

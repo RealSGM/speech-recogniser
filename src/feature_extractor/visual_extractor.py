@@ -141,13 +141,10 @@ def get_dataset(visual_path):
 
 
 def create_dataset(video_data, labels, video_fps, path, config) -> None:
-	print("Creating Visual Feature Dataset...")
-
 	for i, video in enumerate(video_data):
+		print(f"\r    Processing audio {i + 1}/{len(video_data):>2}", end="", flush=True)
 		reset_visual_state()
 		label = labels[i]
-		print(f"Processing video {i+1}/{len(video_data)} - Label: {label}")
-
 		features = []
 
 		for frame in video:
@@ -161,4 +158,4 @@ def create_dataset(video_data, labels, video_fps, path, config) -> None:
 		final = np.concatenate((features, delta, delta_delta), axis=1)
 
 		save_vector_file(label, final, i, path)
-
+	print()
