@@ -93,10 +93,8 @@ def load_dataset(type: str, config: MainConfig):
                     labs.append(label)
                     labels.append(label)
 
-            if config.integration.audio_weight > 0:
-                afe.create_dataset(audios, labs, path=mfcc_path, config=config)
-            if config.integration.visual_weight > 0:
-                vfe.create_dataset(videos, labs, fps_list, path=vis_path, config=config)
+            afe.create_dataset(audios, labs, path=mfcc_path, config=config)
+            vfe.create_dataset(videos, labs, fps_list, path=vis_path, config=config)
 
             del videos, audios, fps_list, labs
             import gc; gc.collect()
