@@ -6,6 +6,9 @@ import mediapipe as mp
 
 mp_face = mp.solutions.face_mesh.FaceMesh(static_image_mode=False) # type: ignore
 
+last_valid_roi = None
+last_gray = None
+
 LIP_IDS = [
 	61,146,91,181,84,17,314,405,321,375,
 	291,308,324,318,402,317,14,87,178,88
@@ -17,6 +20,7 @@ def save_vector_file(label: str, mfcc_features: np.ndarray, index: int, path: st
 	if not os.path.exists(label_dir):
 		os.makedirs(label_dir)
 	np.save(f"{label_dir}/vector_{index:03d}.npy", mfcc_features)
+
 
 def extract_mouth_roi(frame):
     # Convert from BGR to RGB
@@ -42,25 +46,50 @@ def extract_mouth_roi(frame):
 
 	return roi
 
-
 def extract_frame_features(frame):
-	roi = extract_mouth_roi(frame)
+    global last_valid_roi, last_gray
 
-	if roi is None or roi.size == 0:
-		return np.zeros(64)
+    roi = extract_mouth_roi(frame)
+    if roi is None or roi.size == 0:
+        if last_valid_roi is None:
 
-	gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY) # Grayscale
-	gray = cv2.resize(gray, (96, 96)) # Resize to 96x96
-	gray = gray.astype(np.float32) / 255.0 # Normalise
+            coeff_size = 16
+            feature_dim = coeff_size * coeff_size * 2 
+            return np.zeros(feature_dim, dtype=np.float32)
+        roi = last_valid_roi.copy()
+    else:
+        last_valid_roi = roi.copy()
 
-	# Perform DCT
-	dct = cv2.dct(gray)
-	# Take top-left 8x8 coefficients
-	coeffs = dct[:8, :8]
 
-	# Flatten to 64-dim vector
-	return coeffs.flatten()
+    gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    gray = cv2.resize(gray, (96, 96)).astype(np.float32) / 255.0
 
+    if last_gray is None:
+        flow = np.zeros_like(gray)
+    else:
+        flow = cv2.absdiff(gray, last_gray)
+
+    last_gray = gray.copy()
+
+    dct_gray = cv2.dct(gray)
+    dct_flow = cv2.dct(flow)
+
+    coeff_size = 16 
+    dct_gray = dct_gray[:coeff_size, :coeff_size]
+    dct_flow = dct_flow[:coeff_size, :coeff_size]
+
+    features = np.concatenate([
+        dct_gray.flatten(),
+        dct_flow.flatten()
+    ])
+
+    return features
+
+
+def reset_visual_state():
+    global last_gray, last_valid_roi
+    last_gray = None
+    last_valid_roi = None
 
 def compute_deltas(features, N=2):
 	padded = np.pad(features, ((N, N), (0, 0)), mode='edge')
@@ -115,6 +144,7 @@ def create_dataset(video_data, labels, video_fps, path, config) -> None:
 	print("Creating Visual Feature Dataset...")
 
 	for i, video in enumerate(video_data):
+		reset_visual_state()
 		label = labels[i]
 		print(f"Processing video {i+1}/{len(video_data)} - Label: {label}")
 

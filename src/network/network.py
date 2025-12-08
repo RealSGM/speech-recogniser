@@ -8,6 +8,7 @@ from sklearn.preprocessing import LabelEncoder
 from keras.utils import to_categorical
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, InputLayer, MaxPooling2D, Dropout, BatchNormalization
+from keras.layers import TimeDistributed, Bidirectional, LSTM, Reshape
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras.optimizers import Adam
 from utils.config import MainConfig, TrainingConfig
@@ -19,15 +20,18 @@ def encode_labels(labels: list, class_list: list) -> tuple[np.ndarray, LabelEnco
     encoded = to_categorical(encoder.transform(labels))
     return encoded, encoder
 
-
 def get_model_from_config(input_shape: tuple, num_classes: int, cfg: TrainingConfig) -> keras.Model:
+    """
+    Generic 2D-CNN model used for audio and early-integration super-vectors.
+    Expects input_shape like (H, W, 1) or (T, F, 1).
+    """
     model = Sequential()
     model.add(InputLayer(shape=input_shape))
 
     filters = cfg.base_filters
 
     for _ in range(cfg.conv_blocks):
-        model.add(Conv2D(filters, cfg.kernel_size, activation='relu'))
+        model.add(Conv2D(filters, cfg.kernel_size, activation='relu', padding='same'))
         model.add(MaxPooling2D(pool_size=cfg.pool_size))
 
         if cfg.use_batch_norm:
@@ -44,6 +48,99 @@ def get_model_from_config(input_shape: tuple, num_classes: int, cfg: TrainingCon
     model.add(Dense(num_classes, activation='softmax'))
 
     return model
+
+def get_visual_temporal_model(input_shape: tuple, num_classes: int, cfg: TrainingConfig) -> keras.Model:
+    """
+    Visual-only model: TimeDistributed CNN over (96x96) ROI + optical flow,
+    followed by a BiLSTM over time.
+
+    Expects input_shape = (T, F_flat),
+    where F_flat = 96 * 96 * num_channels (num_channels should be 6 with base+delta+delta-delta).
+    """
+    model = Sequential()
+    model.add(InputLayer(shape=input_shape))
+
+    # Unpack shape
+    time_steps = input_shape[0]
+    feat_dim = input_shape[1]
+
+    # We know ROI is 96x96; infer number of channels from feat_dim
+    H, W = 96, 96
+    spatial_dim = H * W
+    num_channels = feat_dim // spatial_dim  # should be 6 (2 channels * 3 [base+delta+delta2])
+
+    # (T, F_flat) -> (T, 96, 96, C)
+    model.add(Reshape((time_steps, H, W, num_channels)))
+
+    filters = cfg.base_filters
+
+    # TimeDistributed CNN blocks
+    for _ in range(cfg.conv_blocks):
+        model.add(TimeDistributed(
+            Conv2D(filters, cfg.kernel_size, activation='relu', padding='same')
+        ))
+        if cfg.use_batch_norm:
+            model.add(TimeDistributed(BatchNormalization()))
+        model.add(TimeDistributed(MaxPooling2D(pool_size=cfg.pool_size)))
+
+        filters *= 2
+
+    # Flatten per time step
+    model.add(TimeDistributed(Flatten()))
+
+    # Temporal modelling
+    model.add(Bidirectional(LSTM(128, return_sequences=False)))
+
+    if cfg.dropout_rate > 0:
+        model.add(Dropout(cfg.dropout_rate))
+
+    model.add(Dense(cfg.dense_units, activation='relu'))
+    model.add(Dense(num_classes, activation='softmax'))
+
+    return model
+
+
+def create_model(input_shape: tuple, num_classes: int, config: MainConfig) -> keras.Model:
+    """
+    Chooses model architecture based on config.notes:
+      - "visual": TimeDistributed CNN + BiLSTM (visual-only)
+      - anything else: generic 2D-CNN (audio, early integration, etc.)
+    """
+    # Visual-only branch
+    if config.notes == "visual":
+        model = get_visual_temporal_model(input_shape, num_classes, config.training)
+    else:
+        # Audio / early / other branches
+        model = get_model_from_config(input_shape, num_classes, config.training)
+
+    adam = Adam(learning_rate=config.training.learning_rate)
+    model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=adam)  # type: ignore
+    return model
+
+# def get_model_from_config(input_shape: tuple, num_classes: int, cfg: TrainingConfig) -> keras.Model:
+#     model = Sequential()
+#     model.add(InputLayer(shape=input_shape))
+
+#     filters = cfg.base_filters
+
+#     for _ in range(cfg.conv_blocks):
+#         model.add(Conv2D(filters, cfg.kernel_size, activation='relu'))
+#         model.add(MaxPooling2D(pool_size=cfg.pool_size))
+
+#         if cfg.use_batch_norm:
+#             model.add(BatchNormalization())
+
+#         filters *= 2
+
+#     model.add(Flatten())
+
+#     if cfg.dropout_rate > 0:
+#         model.add(Dropout(cfg.dropout_rate))
+
+#     model.add(Dense(cfg.dense_units, activation='relu'))
+#     model.add(Dense(num_classes, activation='softmax'))
+
+#     return model
 
 
 def create_model(input_shape: tuple, num_classes: int, config: MainConfig) -> keras.Model:
@@ -100,8 +197,6 @@ def load_model(config: MainConfig) -> tf.keras.Model: # type: ignore
         encoder = pickle.load(f)
     return model, encoder
 
-
-## TODO Retrieve audio and visual specific results
 def get_results_from_file(config: MainConfig) -> tuple[float, float]:
     audio_result = 0.0
     visual_result = 0.0

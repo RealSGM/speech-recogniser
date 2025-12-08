@@ -115,8 +115,8 @@ visual_only = IntegrationConfig(
 )
 
 configs = [
-    MainConfig(test_name="default"),
-    MainConfig(test_name="default_late_integration", integration=late_integration),
-    MainConfig(test_name="audio_only_test", integration=audio_only),
+    # MainConfig(test_name="default"),
+    # MainConfig(test_name="default_late_integration", integration=late_integration),
+    # MainConfig(test_name="audio_only_test", integration=audio_only),
     MainConfig(test_name="visual_only_test", integration=visual_only),
 ]
