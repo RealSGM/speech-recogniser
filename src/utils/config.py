@@ -26,8 +26,14 @@ class VisualConfig:
     def __init__(
         self,
         roi_size: tuple = (96, 96),
+        coeff_size: int = 16,
+        padding_frames: int = 5,
+        use_delta_features: bool = True,
     ):
         self.roi_size = roi_size
+        self.coeff_size = coeff_size
+        self.padding_frames = padding_frames
+        self.use_delta_features = use_delta_features
 
 
 class TrainingConfig:
