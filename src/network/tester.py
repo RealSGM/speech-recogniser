@@ -38,3 +38,8 @@ def run_network(super_vectors: np.ndarray, labels: list[str], config: MainConfig
 
     cm = metrics.confusion_matrix(actual_indices, prediction_indices)
     plot_confusion_matrix(cm, encoder, accuracy, config=config)
+    
+    print(f"==============================")
+    print(f"Testing Accuracy ({config.notes}): {accuracy * 100:.2f}%\n")
+    print(f"Confusion Matrix:\n{cm}\n")
+    print(f"==============================\n")
