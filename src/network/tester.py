@@ -19,7 +19,7 @@ def plot_confusion_matrix(cm, encoder, accuracy, config: MainConfig):
     
     plt.savefig(f"{config_path}/confusion_matrix.png")
     
-    fr.add_to_results_file(config, {f"testing_accuracy_{config.notes}:": f"{accuracy}"})
+    fr.add_to_results_file(config, {f"testing_accuracy_{config.notes}": f"{accuracy}"})
 
 
 def run_network(super_vectors: np.ndarray, labels: list[str], config: MainConfig):
@@ -29,6 +29,7 @@ def run_network(super_vectors: np.ndarray, labels: list[str], config: MainConfig
     encoded_labels, encoder = network.encode_labels(labels, sorted(set(labels)))
     
     model, _ = network.load_model(config=config)
+
     predictions = model.predict(super_vectors, verbose=0)
     prediction_indices = np.argmax(predictions, axis=1)
     actual_indices = np.argmax(encoded_labels, axis=1)
