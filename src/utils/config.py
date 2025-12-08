@@ -1,7 +1,6 @@
 class AudioConfig:
     def __init__(
         self,
-        use_mel_filter_bank: bool = False,
         use_spectral_features: bool = False,
         include_noisy_data: bool = False,
         use_pre_emphasis: bool = False,
@@ -11,7 +10,6 @@ class AudioConfig:
         num_mel_filters: int = 40,
         num_ceps: int = 13,
     ):
-        self.use_mel_filter_bank = use_mel_filter_bank
         self.use_spectral_features = use_spectral_features
         self.include_noisy_data = include_noisy_data
         self.use_pre_emphasis = use_pre_emphasis
@@ -23,17 +21,31 @@ class AudioConfig:
 
 
 class VisualConfig:
-    def __init__(
-        self,
-        roi_size: tuple = (96, 96),
-        coeff_size: int = 16,
-        padding_frames: int = 5,
-        use_delta_features: bool = True,
-    ):
-        self.roi_size = roi_size
-        self.coeff_size = coeff_size
-        self.padding_frames = padding_frames
-        self.use_delta_features = use_delta_features
+	def __init__(
+		self,
+		roi_size=(96,96),
+		coeff_size=8,
+		use_deltas=True,
+		use_shape=True,
+		use_motion_stats=True,
+		use_lbp=False,
+		frame_stride=1,
+		pad_px=0,
+		lip_landmarks=None,
+	):
+		self.roi_size = roi_size
+		self.coeff_size = coeff_size
+		self.use_deltas = use_deltas
+		self.use_shape = use_shape
+		self.use_motion_stats = use_motion_stats
+		self.use_lbp = use_lbp
+		self.frame_stride = max(1, frame_stride)
+		self.pad_px = pad_px
+		self.lip_landmarks = lip_landmarks or [
+			61,146,91,181,84,17,314,405,321,375,
+			291,308,324,318,402,317,14,87,178,88
+		]
+
 
 
 class TrainingConfig:
@@ -120,9 +132,25 @@ visual_only = IntegrationConfig(
     visual_weight=1.0,
 )
 
+visual_simple = VisualConfig(
+    use_deltas=False,
+    use_shape=False,
+    use_motion_stats=False,
+    use_lbp=False,
+)
+
+visual_full = VisualConfig(
+    use_deltas=True,
+    use_shape=True,
+    use_motion_stats=True,
+    use_lbp=True,
+    pad_px=8,
+    )
+
 configs = [
     # MainConfig(test_name="default"),
     # MainConfig(test_name="default_late_integration", integration=late_integration),
     # MainConfig(test_name="audio_only_test", integration=audio_only),
-    MainConfig(test_name="visual_only_test", integration=visual_only),
+    MainConfig(test_name="visual_simple_test", visual=visual_simple, integration=visual_only),
+    MainConfig(test_name="visual_full_test", visual=visual_full, integration=visual_only),
 ]

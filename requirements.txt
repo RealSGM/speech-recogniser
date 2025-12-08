@@ -4,3 +4,4 @@ moviepy
 librosa
 tensorflow
 seaborn
+sckit-image

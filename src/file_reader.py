@@ -93,7 +93,7 @@ def get_audio_visual_recordings(cfg: MainConfig, type: str, label: str, root: st
 	return videos, audios, fps_list, labs
 
 
-def get_labels_from_files(type: str, config: MainConfig) -> list[str]:
+def get_labels_from_files(type: str) -> list[str]:
     root = f"{PATH}{RECORDINGS_PATH}{type}/"
     labels = []
 
@@ -128,12 +128,12 @@ def load_dataset(type: str, config: MainConfig):
             print(f"\033[33mExtracting audio features for {len(audios)} recordings...\033[0m")
             afe.create_dataset(audios, labs, path=mfcc_path, config=config)
             print(f"\033[33mExtracting video features for {len(videos)} recordings...\033[0m")
-            vfe.create_dataset(videos, labs, fps_list, path=vis_path, config=config)
+            vfe.create_dataset(videos, labs, fps_list, path=vis_path, cfg=config)
 
             del videos, audios, fps_list, labs
             import gc; gc.collect()
 
-    labels = get_labels_from_files(type, config)
+    labels = get_labels_from_files(type)
     mfcc, _ = afe.get_dataset(mfcc_path)
     vis, _ = vfe.get_dataset(vis_path)
     return mfcc, vis, labels

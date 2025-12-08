@@ -1,5 +1,7 @@
 {
-    "training_accuracy_visual": "41.77215189873418",
-    "elapsed_time_visual": "304.63",
-    "late_integration_training_results": "41.77%"
+    "training_accuracy_visual": "0.6582278481012658",
+    "elapsed_time_visual": "907.82",
+    "late_integration_training_results:": "65.82%",
+    "testing_accuracy_visual": "0.885",
+    "late_integration_testing_results:": "88.50%"
 }

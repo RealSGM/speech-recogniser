@@ -45,8 +45,7 @@ def pad_mfcc_features(data: list[np.ndarray], max_len: int, num_features: int) -
 	return padded
 
 
-def mfcc(speechFrame: np.ndarray, fs: int, num_mel_filters: int, num_ceps: int,
-		use_spectral_features: bool, use_mel_filter_bank: bool) -> np.ndarray:
+def mfcc(speechFrame: np.ndarray, fs: int, cfg: MainConfig) -> np.ndarray:
 
 	# Compute magnitude spectrum
 	S = np.abs(librosa.stft(speechFrame, n_fft=len(speechFrame), window='hamming'))[:, 0]
@@ -54,17 +53,16 @@ def mfcc(speechFrame: np.ndarray, fs: int, num_mel_filters: int, num_ceps: int,
 	# Energy
 	frame_energy = np.log(np.sum(S**2) + MIN_INT)
 
-	# Triangular Mel or custom filterbank -> librosa handles Mel-spaced
 	mfcc_vals = librosa.feature.mfcc(
 		y=speechFrame,
 		sr=fs,
-		n_mfcc=num_ceps,
-		n_mels=num_mel_filters,
-		hop_length=len(speechFrame),	# single frame
+		n_mfcc=cfg.audio.num_ceps,
+		n_mels=cfg.audio.num_mel_filters,
+		hop_length=len(speechFrame),
 		n_fft=len(speechFrame)
 	).flatten()
 
-	if use_spectral_features:
+	if cfg.audio.use_spectral_features:
 		spec_stats = spectral_features(S, fs)
 		return np.concatenate([mfcc_vals, spec_stats, [frame_energy]])
 
@@ -93,7 +91,7 @@ def get_mfcc_signal(speechSignal: np.ndarray, fs: int, config: MainConfig) -> np
 
 	mfcc_features = []
 	for frame in frames:
-		mfcc_features.append(mfcc(frame, fs, config.audio.num_mel_filters, config.audio.num_ceps, config.audio.use_spectral_features, config.audio.use_mel_filter_bank))
+		mfcc_features.append(mfcc(frame, fs, config))
 
 	return np.array(mfcc_features)
 
