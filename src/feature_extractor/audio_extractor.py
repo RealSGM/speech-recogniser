@@ -28,8 +28,8 @@ def spectral_features(magnitude: np.ndarray, fs: int) -> np.ndarray:
 	return np.array([centroid, bandwidth, flatness])
 
 
-def preprocess_signal(signal: np.ndarray, coeff: float = 0.97) -> np.ndarray:
-	emphasised = librosa.effects.preemphasis(signal, coef=coeff)
+def preprocess_signal(signal: np.ndarray, cfg: MainConfig) -> np.ndarray:
+	emphasised = librosa.effects.preemphasis(signal, coef=cfg.audio.pre_emphasis_coeff)
 	return emphasised - np.mean(emphasised)
 
 
@@ -69,19 +69,19 @@ def mfcc(speechFrame: np.ndarray, fs: int, cfg: MainConfig) -> np.ndarray:
 	return np.concatenate([mfcc_vals, [frame_energy]])
 
 
-def get_mfcc_signal(speechSignal: np.ndarray, fs: int, config: MainConfig) -> np.ndarray:
+def get_mfcc_signal(speechSignal: np.ndarray, fs: int, cfg: MainConfig) -> np.ndarray:
 
 	speechSignal = np.asarray(speechSignal)
 
 	if speechSignal.ndim > 1:
 		speechSignal = np.mean(speechSignal, axis=1)
 
-	frame_length = int(config.audio.frame_size * fs)
-	frame_step = int(config.audio.frame_stride * fs)
+	frame_length = int(cfg.audio.frame_size * fs)
+	frame_step = int(cfg.audio.frame_stride * fs)
 
 	if speechSignal.size < frame_length:
-		num_extra = 4 if config.audio.use_spectral_features else 1
-		return np.zeros((1, config.audio.num_ceps + num_extra))
+		num_extra = 4 if cfg.audio.use_spectral_features else 1
+		return np.zeros((1, cfg.audio.num_ceps + num_extra))
 
 	frames = librosa.util.frame(
 		speechSignal,
@@ -91,17 +91,17 @@ def get_mfcc_signal(speechSignal: np.ndarray, fs: int, config: MainConfig) -> np
 
 	mfcc_features = []
 	for frame in frames:
-		mfcc_features.append(mfcc(frame, fs, config))
+		mfcc_features.append(mfcc(frame, fs, cfg))
 
 	return np.array(mfcc_features)
 
 
-def create_dataset(audio_data, labels, path: str, config: MainConfig) -> None:
+def create_dataset(audio_data, labels, path: str, cfg: MainConfig) -> None:
 	for i, sig in enumerate(audio_data):
 		print(f"\r    Processing audio {i + 1}/{len(audio_data):>2}", end="", flush=True)
 		label = labels[i]
-		signal = preprocess_signal(sig)
-		mfcc_raw = get_mfcc_signal(signal, fs=16000, config=config)
+		signal = preprocess_signal(sig, cfg)
+		mfcc_raw = get_mfcc_signal(signal, fs=16000, cfg=cfg)
 		mfcc_norm = (mfcc_raw - np.mean(mfcc_raw)) / np.std(mfcc_raw)
 
 		delta = compute_deltas(mfcc_norm)

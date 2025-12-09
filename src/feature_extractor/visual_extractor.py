@@ -55,22 +55,6 @@ def reset_visual_state():
 	last_height = None
 
 
-def extract_shape_features(pts):
-	left  = np.array(pts[0])
-	right = np.array(pts[10])
-	top   = np.array(pts[5])
-	bot   = np.array(pts[15])
-
-	width = np.linalg.norm(left-right)
-	height = np.linalg.norm(top-bot)
-
-	ratio = height / (width + 1e-6)
-	area = cv2.contourArea(np.array(pts))
-	perimeter = cv2.arcLength(np.array(pts), True)
-
-	return np.array([width, height, ratio, area, perimeter], dtype=np.float32), height
-
-
 def extract_lbp_features(gray):
 	lbp = local_binary_pattern(gray, P=LBP_POINTS, R=LBP_RADIUS, method='uniform')
 	hist,_ = np.histogram(lbp, bins=LBP_BINS, range=(0,LBP_BINS), density=True)
@@ -84,8 +68,6 @@ def extract_frame_features(frame: np.ndarray, cfg: MainConfig) -> np.ndarray:
 	if roi_data is None:
 		if last_valid_roi is None:
 			dim = 2 * cfg.visual.coeff_size**2
-			if cfg.visual.use_shape:
-				dim += 6
 			if cfg.visual.use_motion_stats:
 				dim += 2
 			if cfg.visual.use_lbp:
@@ -119,18 +101,6 @@ def extract_frame_features(frame: np.ndarray, cfg: MainConfig) -> np.ndarray:
 		dct_gray.flatten(),
 		dct_flow.flatten()
 	]
-
-	if cfg.visual.use_shape and pts is not None:
-		shape, cur_height = extract_shape_features(pts)
-		if last_height is None:
-			delta_height = 0.0
-		else:
-			delta_height = cur_height - last_height
-
-		last_height = cur_height
-
-		shape_features = np.concatenate([shape, [delta_height]])
-		features.append(shape_features)
 
 	if cfg.visual.use_motion_stats:
 		mean_motion = np.mean(flow)
@@ -199,7 +169,7 @@ def create_dataset(videos, labels, fps_list, path, cfg: MainConfig) -> None:
 	total = len(videos)
 
 	for i, video in enumerate(videos):
-		print(f"\r    Processing video {i+1}/{total}", end="", flush=True)
+		print(f"\r    Processing video {i + 1}/{total:>2}", end="", flush=True)
 		reset_visual_state()
 
 		label = labels[i]
