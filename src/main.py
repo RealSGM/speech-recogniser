@@ -79,7 +79,7 @@ def run_full_session() -> None:
         print(f"==============================\n")
 
         # Create config folder
-        # fr.create_config_path(config)
+        fr.create_config_path(config)
         config.start_time = time.time()
 
         run_network(trainer, config, TRAINING)
@@ -87,8 +87,7 @@ def run_full_session() -> None:
 
 
 def main() -> None:
-    # run_full_session()
-    fr.create_all_datasets(get_configs())
+    run_full_session()
 
 
 if __name__ == "__main__":

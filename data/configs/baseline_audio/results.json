@@ -1,0 +1,7 @@
+{
+    "training_accuracy_audio": "0.8607594936708861",
+    "elapsed_time_audio": "787.57",
+    "late_integration_training_results:": "86.08%",
+    "testing_accuracy_audio": "0.98",
+    "late_integration_testing_results:": "98.00%"
+}
