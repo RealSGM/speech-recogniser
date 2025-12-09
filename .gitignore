@@ -208,3 +208,5 @@ __marimo__/
 
 # Numpy binary files
 *.npy
+*.pkl
+*.keras
