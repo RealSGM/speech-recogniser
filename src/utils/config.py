@@ -180,9 +180,11 @@ frame_stride_3 = VisualConfig(frame_stride=3)
 pad_px_2 = VisualConfig(pad_px=2)
 pad_px_4 = VisualConfig(pad_px=4)
 
-lip_landmarks_minimal = VisualConfig(lip_landmarks=[61,146,91,181,84,17,314,405])
+lip_landmarks_minimal = VisualConfig(lip_landmarks=[
+    61,146,91,181,84,17,314,405]
+)
 
-lip_landmarks_extended = VisualConfig(lip_landmarks=[
+lip_landmarks_detailed = VisualConfig(lip_landmarks=[
         61,146,91,181,84,17,314,405,321,375,
         291,308,324,318,402,317,14,87,178,88,
         95,185,40,39,37,0,267,269,270,409,
@@ -195,12 +197,6 @@ optimum_visual= VisualConfig(
     roi_size=(64, 64),
     coeff_size=32,
     pad_px=4,
-    lip_landmarks=[
-        61,146,91,181,84,17,314,405,321,375,
-        291,308,324,318,402,317,14,87,178,88,
-        95,185,40,39,37,0,267,269,270,409,
-        415,310,311,312,13,82,81,42,183,78
-    ],
     frame_stride=2,
     use_deltas=True,   
     use_motion_stats=True,
@@ -223,14 +219,14 @@ statistically_best = VisualConfig(
     use_lbp=True,
 )
 
+optimum_no_features = VisualConfig(
+    roi_size=(64, 64),
+    coeff_size=32,
+    pad_px=4,
+    frame_stride=2,
+    
+)    
 
-rois = [(64,64), (96,96), (128,128)]
-frame_strides = [1,2,3]
-coeff_sizes = [8,16,32]
-pad_pxs = [0,2,4]
-use_deltas_options = [False, True]
-use_motion_stats_options = [False, True]
-use_lbp_options = [False, True]
 
 configs = [
     # MainConfig(test_name="roi_small", visual=roi_small, integration=visual_only, training=optimum_model),
@@ -242,7 +238,7 @@ configs = [
     # MainConfig(test_name="pad_px_2", visual=pad_px_2, integration=visual_only, training=optimum_model),
     # MainConfig(test_name="pad_px_4", visual=pad_px_4, integration=visual_only, training=optimum_model),
     # MainConfig(test_name="lip_landmarks_minimal", visual=lip_landmarks_minimal, integration=visual_only, training=optimum_model),
-    # MainConfig(test_name="lip_landmarks_extended", visual=lip_landmarks_extended, integration=visual_only, training=optimum_model),
+    # MainConfig(test_name="lip_landmarks_detailed", visual=lip_landmarks_detailed, integration=visual_only, training=optimum_model),
     # MainConfig(test_name="use_delta", visual=use_delta, integration=visual_only, training=optimum_model),
     # MainConfig(test_name="use_motion_stats", visual=use_motion_stats, integration=visual_only, training=optimum_model),
     # MainConfig(test_name="use_lbp", visual=use_lbp, integration=visual_only, training=optimum_model),
