@@ -192,40 +192,66 @@ lip_landmarks_extended = VisualConfig(lip_landmarks=[
 
 
 optimum_visual= VisualConfig(
-    roi_size=(64,64),
-    coeff_size=16,
-    frame_stride=1,
-    pad_px=2,
-    lip_landmarks=[61,146,91,181,84,17,314,405]
+    roi_size=(64, 64),
+    coeff_size=32,
+    pad_px=4,
+    lip_landmarks=[
+        61,146,91,181,84,17,314,405,321,375,
+        291,308,324,318,402,317,14,87,178,88,
+        95,185,40,39,37,0,267,269,270,409,
+        415,310,311,312,13,82,81,42,183,78
+    ],
+    frame_stride=2,
+    use_deltas=True,   
+    use_motion_stats=True,
+    use_lbp=False,
 )
 
 statistically_best = VisualConfig(
-    roi_size=(64,64),
-    coeff_size=16,
-    pad_px=2,
-    lip_landmarks=[61,146,91,181,84,17,314,405],
+    roi_size=(128, 128),
+    coeff_size=32,
+    pad_px=4,
+    lip_landmarks=[
+        61,146,91,181,84,17,314,405,321,375,
+        291,308,324,318,402,317,14,87,178,88,
+        95,185,40,39,37,0,267,269,270,409,
+        415,310,311,312,13,82,81,42,183,78
+    ],
+    frame_stride=2,
     use_deltas=True,   
-    use_motion_stats=False,
+    use_motion_stats=True,
     use_lbp=True,
 )
 
 
+rois = [(64,64), (96,96), (128,128)]
+frame_strides = [1,2,3]
+coeff_sizes = [8,16,32]
+pad_pxs = [0,2,4]
+use_deltas_options = [False, True]
+use_motion_stats_options = [False, True]
+use_lbp_options = [False, True]
+
 configs = [
-    MainConfig(test_name="roi_small", visual=roi_small, integration=visual_only, training=optimum_model),
-    MainConfig(test_name="roi_large", visual=roi_large, integration=visual_only, training=optimum_model),
-    MainConfig(test_name="coeff_size_16", visual=coeff_size_16, integration=visual_only, training=optimum_model),
-    MainConfig(test_name="coeff_size_32", visual=coeff_size_32, integration=visual_only, training=optimum_model),
-    MainConfig(test_name="frame_stride_2", visual=frame_stride_2, integration=visual_only, training=optimum_model),
-    MainConfig(test_name="frame_stride_3", visual=frame_stride_3, integration=visual_only, training=optimum_model),
-    MainConfig(test_name="pad_px_2", visual=pad_px_2, integration=visual_only, training=optimum_model),
-    MainConfig(test_name="pad_px_4", visual=pad_px_4, integration=visual_only, training=optimum_model),
-    MainConfig(test_name="lip_landmarks_minimal", visual=lip_landmarks_minimal, integration=visual_only, training=optimum_model),
-    MainConfig(test_name="lip_landmarks_extended", visual=lip_landmarks_extended, integration=visual_only, training=optimum_model),
-    MainConfig(test_name="use_delta", visual=use_delta, integration=visual_only, training=optimum_model),
-    MainConfig(test_name="use_motion_stats", visual=use_motion_stats, integration=visual_only, training=optimum_model),
-    MainConfig(test_name="use_lbp", visual=use_lbp, integration=visual_only, training=optimum_model),
-    MainConfig(test_name="baseline_visual", integration=visual_only, training=optimum_model, audio=optimum_audio),
-    MainConfig(test_name="baseline_audio", integration=audio_only, training=optimum_model, audio=optimum_audio),
-    MainConfig(test_name="baseline_early_integration", integration=early_integration, training=optimum_model, audio=optimum_audio),
-    MainConfig(test_name="baseline_late_integration", integration=late_integration, training=optimum_model, audio=optimum_audio),
+    # MainConfig(test_name="roi_small", visual=roi_small, integration=visual_only, training=optimum_model),
+    # MainConfig(test_name="roi_large", visual=roi_large, integration=visual_only, training=optimum_model),
+    # MainConfig(test_name="coeff_size_16", visual=coeff_size_16, integration=visual_only, training=optimum_model),
+    # MainConfig(test_name="coeff_size_32", visual=coeff_size_32, integration=visual_only, training=optimum_model),
+    # MainConfig(test_name="frame_stride_2", visual=frame_stride_2, integration=visual_only, training=optimum_model),
+    # MainConfig(test_name="frame_stride_3", visual=frame_stride_3, integration=visual_only, training=optimum_model),
+    # MainConfig(test_name="pad_px_2", visual=pad_px_2, integration=visual_only, training=optimum_model),
+    # MainConfig(test_name="pad_px_4", visual=pad_px_4, integration=visual_only, training=optimum_model),
+    # MainConfig(test_name="lip_landmarks_minimal", visual=lip_landmarks_minimal, integration=visual_only, training=optimum_model),
+    # MainConfig(test_name="lip_landmarks_extended", visual=lip_landmarks_extended, integration=visual_only, training=optimum_model),
+    # MainConfig(test_name="use_delta", visual=use_delta, integration=visual_only, training=optimum_model),
+    # MainConfig(test_name="use_motion_stats", visual=use_motion_stats, integration=visual_only, training=optimum_model),
+    # MainConfig(test_name="use_lbp", visual=use_lbp, integration=visual_only, training=optimum_model),
+    # MainConfig(test_name="baseline_visual", integration=visual_only, training=optimum_model, audio=optimum_audio),
+    # MainConfig(test_name="baseline_audio", integration=audio_only, training=optimum_model, audio=optimum_audio),
+    # MainConfig(test_name="baseline_early_integration", integration=early_integration, training=optimum_model, audio=optimum_audio),
+    # MainConfig(test_name="baseline_late_integration", integration=late_integration, training=optimum_model, audio=optimum_audio),
+    MainConfig(test_name="statistically_best_late", visual=statistically_best, integration=late_integration, training=optimum_model, audio=optimum_audio),
+    MainConfig(test_name="statistically_best_early", visual=statistically_best, integration=early_integration, training=optimum_model, audio=optimum_audio),
+    MainConfig(test_name="optimum_model_early", visual=optimum_visual, integration=early_integration, training=optimum_model, audio=optimum_audio),
+    MainConfig(test_name="optimum_model_late", visual=optimum_visual, integration=late_integration, training=optimum_model, audio=optimum_audio),
 ]
