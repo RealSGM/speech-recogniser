@@ -204,7 +204,7 @@ optimum_visual= VisualConfig(
 )
 
 statistically_best = VisualConfig(
-    roi_size=(128, 128),
+    roi_size=(64, 64),
     coeff_size=32,
     pad_px=4,
     lip_landmarks=[
@@ -218,14 +218,6 @@ statistically_best = VisualConfig(
     use_motion_stats=True,
     use_lbp=True,
 )
-
-optimum_no_features = VisualConfig(
-    roi_size=(64, 64),
-    coeff_size=32,
-    pad_px=4,
-    frame_stride=2,
-    
-)    
 
 
 configs = [

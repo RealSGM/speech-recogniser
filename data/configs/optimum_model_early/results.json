@@ -1,1 +1,5 @@
-{}
+{
+    "training_accuracy_default": "0.8987341772151899",
+    "elapsed_time_default": "1583.18",
+    "testing_accuracy_default": "0.98"
+}
